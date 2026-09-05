@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, Headphones, Megaphone } from "lucide-react";
+import { Bell, ChevronLeft, Headphones, Megaphone } from "lucide-react";
 import { NoticeComposeSheet } from "@/components/notices/NoticeComposeSheet";
 import { InstallHomeButton } from "@/components/pwa/InstallHomeButton";
 import { SupportRequestSheet } from "@/components/support/SupportRequestSheet";
@@ -19,6 +20,7 @@ export function AppChrome({
   extraRight,
   tabs,
   pendingCount = 0,
+  unreadCount = 0,
   children,
 }: {
   title: string;
@@ -28,6 +30,7 @@ export function AppChrome({
   extraRight?: ReactNode;
   tabs: TabItem[];
   pendingCount?: number;
+  unreadCount?: number;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -35,11 +38,17 @@ export function AppChrome({
   const [supportOpen, setSupportOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [toast, setToast] = useState("");
+  const notificationsHref =
+    role === "employee" ? "/app/notifications" : "/admin/notifications";
   const settingsBackHref = pathname.startsWith("/app/settings/")
     ? "/app/settings"
     : pathname.startsWith("/admin/settings/")
       ? "/admin/settings"
-      : null;
+      : pathname.startsWith("/admin/notifications")
+        ? "/admin"
+        : pathname.startsWith("/app/notifications")
+          ? "/app"
+          : null;
 
   return (
     <PageShell
@@ -70,6 +79,20 @@ export function AppChrome({
           ) : null}
           <InstallHomeButton />
           {extraRight}
+          <Link
+            href={notificationsHref}
+            aria-label={
+              unreadCount > 0 ? `알림 ${unreadCount}건` : "알림"
+            }
+            className="relative flex size-8 items-center justify-center text-ink"
+          >
+            <Bell size={22} strokeWidth={2} />
+            {unreadCount > 0 ? (
+              <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-surface">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </Link>
           {userName ? (
             <span className="max-w-[28vw] truncate text-13 font-semibold text-ink">
               {userName}님

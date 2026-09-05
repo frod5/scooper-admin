@@ -64,6 +64,7 @@ function titleFor(pathname: string) {
   if (pathname.startsWith("/admin/settings/branches")) return "지점관리";
   if (pathname.startsWith("/admin/settings/notices")) return "공지 알림 내역";
   if (pathname.startsWith("/admin/settings")) return "설정";
+  if (pathname.startsWith("/admin/notifications")) return "알림";
   return "SCOOPER";
 }
 
@@ -73,6 +74,7 @@ export function AdminShell({
   userRole,
   userRoleLabel,
   pendingCount = 0,
+  unreadCount = 0,
   branches = [],
 }: {
   children: ReactNode;
@@ -80,6 +82,7 @@ export function AdminShell({
   userRole: UserRole;
   userRoleLabel: string;
   pendingCount?: number;
+  unreadCount?: number;
   branches?: Branch[];
 }) {
   const pathname = usePathname();
@@ -114,6 +117,7 @@ export function AdminShell({
         }
         tabs={TABS}
         pendingCount={pendingCount}
+        unreadCount={unreadCount}
       >
         {children}
       </AppChrome>

@@ -1,5 +1,6 @@
 import { EmployeeShell } from "@/components/shell/EmployeeShell";
 import { requireEmployee } from "@/lib/auth/session";
+import { countUnreadNotificationsAction } from "@/lib/notifications/actions";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,12 +23,16 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireEmployee();
-  const pendingCount = await myPendingCount(profile.id);
+  const [pendingCount, unread] = await Promise.all([
+    myPendingCount(profile.id),
+    countUnreadNotificationsAction(),
+  ]);
   return (
     <EmployeeShell
       userName={profile.name}
       branchName={profile.branch_name}
       pendingCount={pendingCount}
+      unreadCount={unread.ok ? unread.data : 0}
     >
       {children}
     </EmployeeShell>

@@ -18,6 +18,16 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+do $$ begin
+  create type public.notification_type as enum (
+    'change_request',
+    'change_approved',
+    'change_rejected',
+    'notice'
+  );
+exception when duplicate_object then null;
+end $$;
+
 create table if not exists public.branches (
   id uuid primary key default gen_random_uuid(),
   name text not null unique
@@ -80,6 +90,17 @@ create table if not exists public.push_subscriptions (
   auth text not null
 );
 
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  type public.notification_type not null,
+  title text not null,
+  body text not null,
+  url text not null default '/',
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists profiles_branch_id_idx on public.profiles (branch_id);
 create index if not exists profiles_role_idx on public.profiles (role);
 create index if not exists work_schedules_work_date_idx on public.work_schedules (work_date);
@@ -88,6 +109,15 @@ create index if not exists schedule_change_requests_status_idx on public.schedul
 create index if not exists notices_created_at_idx on public.notices (created_at desc);
 create index if not exists support_tickets_created_at_idx on public.support_tickets (created_at desc);
 create index if not exists push_subscriptions_user_id_idx on public.push_subscriptions (user_id);
+drop index if exists public.notifications_user_created_at_idx;
+drop index if exists public.notifications_user_unread_idx;
+drop index if exists public.notifications_user_id_created_at_idx;
+drop index if exists public.notifications_user_id_unread_idx;
+create index notifications_user_id_created_at_idx
+  on public.notifications (user_id, created_at desc);
+create index notifications_user_id_unread_idx
+  on public.notifications (user_id, created_at desc)
+  where read_at is null;
 
 create or replace function public.current_role()
 returns public.user_role
@@ -185,6 +215,7 @@ alter table public.schedule_change_requests enable row level security;
 alter table public.notices enable row level security;
 alter table public.support_tickets enable row level security;
 alter table public.push_subscriptions enable row level security;
+alter table public.notifications enable row level security;
 
 drop policy if exists branches_select on public.branches;
 create policy branches_select on public.branches
@@ -330,6 +361,17 @@ create policy push_subscriptions_delete on public.push_subscriptions
   for delete to authenticated
   using (user_id = auth.uid());
 
+drop policy if exists notifications_select on public.notifications;
+create policy notifications_select on public.notifications
+  for select to authenticated
+  using (user_id = auth.uid() and public.is_active_self());
+
+drop policy if exists notifications_update on public.notifications;
+create policy notifications_update on public.notifications
+  for update to authenticated
+  using (user_id = auth.uid() and public.is_active_self())
+  with check (user_id = auth.uid() and public.is_active_self());
+
 revoke all on public.branches from anon, public;
 revoke all on public.profiles from anon, public;
 revoke all on public.work_schedules from anon, public;
@@ -337,6 +379,7 @@ revoke all on public.schedule_change_requests from anon, public;
 revoke all on public.notices from anon, public;
 revoke all on public.support_tickets from anon, public;
 revoke all on public.push_subscriptions from anon, public;
+revoke all on public.notifications from anon, public;
 
 grant select, insert, update, delete on public.branches to authenticated;
 grant select, insert, update, delete on public.profiles to authenticated;
@@ -345,6 +388,7 @@ grant select, insert, update, delete on public.schedule_change_requests to authe
 grant select, insert, update, delete on public.notices to authenticated;
 grant select, insert, update, delete on public.support_tickets to authenticated;
 grant select, insert, update, delete on public.push_subscriptions to authenticated;
+grant select, insert, update, delete on public.notifications to authenticated;
 
 revoke all on function public.current_role() from public, anon;
 revoke all on function public.current_status() from public, anon;

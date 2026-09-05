@@ -171,7 +171,6 @@ export function EmployeeRequestsPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-13 text-muted">바꿀 수 있는 근무만 보여 줍니다</p>
       {error ? (
         <ErrorBanner
           message={error}

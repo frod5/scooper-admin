@@ -3,11 +3,19 @@ import "server-only";
 import webPush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseSecretKey } from "@/lib/supabase/env";
+import type { AppNotificationType } from "@/lib/types";
 
 type PushPayload = {
   title: string;
   body: string;
   url?: string;
+};
+
+type InAppPayload = {
+  type: AppNotificationType;
+  title: string;
+  body: string;
+  url: string;
 };
 
 function vapid() {
@@ -77,6 +85,41 @@ export async function sendPushToUserIds(
   return { failed: sent === 0 };
 }
 
+async function persistNotifications(
+  userIds: string[],
+  payload: InAppPayload,
+): Promise<void> {
+  if (userIds.length === 0 || !getSupabaseSecretKey()) return;
+  try {
+    const admin = createAdminClient();
+    await admin.from("notifications").insert(
+      userIds.map((user_id) => ({
+        user_id,
+        type: payload.type,
+        title: payload.title,
+        body: payload.body,
+        url: payload.url,
+      })),
+    );
+  } catch {
+    // 테이블이 아직 없거나 저장 실패해도 푸시는 보냄.
+  }
+}
+
+export async function notifyUsers(
+  userIds: string[],
+  payload: InAppPayload,
+): Promise<{ failed: boolean }> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  if (unique.length === 0) return { failed: false };
+  await persistNotifications(unique, payload);
+  return sendPushToUserIds(unique, {
+    title: payload.title,
+    body: payload.body.slice(0, 80),
+    url: payload.url,
+  });
+}
+
 export async function notifyNoticeRecipients(input: {
   title: string;
   body: string;
@@ -92,12 +135,13 @@ export async function notifyNoticeRecipients(input: {
   if (input.branchId) query = query.eq("branch_id", input.branchId);
   const { data, error } = await query;
   if (error) return { failed: true };
-  return sendPushToUserIds(
+  return notifyUsers(
     (data ?? []).map((row) => row.id as string),
     {
+      type: "notice",
       title: input.title,
-      body: input.body.slice(0, 80),
-      url: "/app",
+      body: input.body,
+      url: "/app/settings/notices",
     },
   );
 }
@@ -121,21 +165,39 @@ export async function notifySystemAdminsOfSupport(body: string): Promise<void> {
   );
 }
 
-export async function notifyOwnersOfChangeRequest(): Promise<void> {
+export async function notifyStaffOfChangeRequest(input: {
+  employeeName: string;
+  excludeUserId?: string;
+}): Promise<void> {
   if (!getSupabaseSecretKey()) return;
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
     .select("id")
-    .eq("role", "owner")
+    .in("role", ["owner", "system_admin"])
     .eq("status", "active");
   if (error || !data) return;
-  await sendPushToUserIds(
-    data.map((row) => row.id as string),
-    {
-      title: "SCOOPER",
-      body: "근무 변경 요청이 있습니다.",
-      url: "/admin/requests",
-    },
-  );
+  const ids = data
+    .map((row) => row.id as string)
+    .filter((id) => id !== input.excludeUserId);
+  await notifyUsers(ids, {
+    type: "change_request",
+    title: "근무 변경 요청",
+    body: `${input.employeeName}님이 근무 변경을 요청했습니다.`,
+    url: "/admin/requests",
+  });
+}
+
+export async function notifyEmployeeOfChangeDecision(input: {
+  userId: string;
+  approved: boolean;
+}): Promise<void> {
+  await notifyUsers([input.userId], {
+    type: input.approved ? "change_approved" : "change_rejected",
+    title: input.approved ? "근무 변경 승인" : "근무 변경 거절",
+    body: input.approved
+      ? "근무 변경 요청이 승인되었습니다."
+      : "근무 변경 요청이 거절되었습니다.",
+    url: "/app/requests",
+  });
 }

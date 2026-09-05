@@ -19,7 +19,10 @@ import {
   parseRequestedDate,
   visibleChangeReason,
 } from "@/lib/schedules/date-move";
-import { notifyOwnersOfChangeRequest } from "@/lib/push/send";
+import {
+  notifyEmployeeOfChangeDecision,
+  notifyStaffOfChangeRequest,
+} from "@/lib/push/send";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import type {
@@ -410,15 +413,20 @@ export async function createChangeRequestAction(input: {
   if (error) return { ok: false, error: NETWORK_ERROR };
 
   try {
-    await notifyOwnersOfChangeRequest();
+    await notifyStaffOfChangeRequest({
+      employeeName: profile.name,
+      excludeUserId: profile.id,
+    });
   } catch {
-    // 요청 저장은 유지. 푸시는 실패해도 됨.
+    // 요청 저장은 유지. 알림은 실패해도 됨.
   }
 
   revalidatePath("/app");
   revalidatePath("/app/requests");
+  revalidatePath("/app/notifications");
   revalidatePath("/admin");
   revalidatePath("/admin/requests");
+  revalidatePath("/admin/notifications");
   revalidatePath("/admin/schedules");
   const row = data as RequestRow;
   return {
@@ -740,11 +748,23 @@ export async function approveChangeRequestAction(
   if (updateError) return { ok: false, error: NETWORK_ERROR };
 
   try {
+    await notifyEmployeeOfChangeDecision({
+      userId: row.user_id,
+      approved: true,
+    });
+  } catch {
+    // 승인은 유지. 알림은 실패해도 됨.
+  }
+
+  try {
     const next = updated as RequestRow;
     const profiles = await profilesByIds(supabase, [next.user_id, staff.id]);
     revalidatePath("/app");
+    revalidatePath("/app/requests");
+    revalidatePath("/app/notifications");
     revalidatePath("/admin");
     revalidatePath("/admin/requests");
+    revalidatePath("/admin/notifications");
     revalidatePath("/admin/schedules");
     return {
       ok: true,
@@ -837,10 +857,21 @@ export async function rejectChangeRequestAction(
   if (error) return { ok: false, error: NETWORK_ERROR };
   try {
     const next = updated as RequestRow;
+    try {
+      await notifyEmployeeOfChangeDecision({
+        userId: next.user_id,
+        approved: false,
+      });
+    } catch {
+      // 거절은 유지. 알림은 실패해도 됨.
+    }
     const profiles = await profilesByIds(supabase, [next.user_id, staff.id]);
     revalidatePath("/app");
+    revalidatePath("/app/requests");
+    revalidatePath("/app/notifications");
     revalidatePath("/admin");
     revalidatePath("/admin/requests");
+    revalidatePath("/admin/notifications");
     revalidatePath("/admin/schedules");
     return {
       ok: true,

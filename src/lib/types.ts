@@ -91,3 +91,19 @@ export type SupportTicket = {
   body: string;
   created_at: string;
 };
+
+export type AppNotificationType =
+  | "change_request"
+  | "change_approved"
+  | "change_rejected"
+  | "notice";
+
+export type AppNotification = {
+  id: string;
+  type: AppNotificationType;
+  title: string;
+  body: string;
+  url: string;
+  read_at: string | null;
+  created_at: string;
+};

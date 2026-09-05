@@ -17,6 +17,7 @@ function titleFor(pathname: string) {
   if (pathname.startsWith("/app/settings/notices")) return "공지사항 내역";
   if (pathname.startsWith("/app/settings")) return "설정";
   if (pathname.startsWith("/app/requests")) return "변경요청";
+  if (pathname.startsWith("/app/notifications")) return "알림";
   return "SCOOPER";
 }
 
@@ -24,11 +25,13 @@ export function EmployeeShell({
   children,
   userName,
   pendingCount = 0,
+  unreadCount = 0,
 }: {
   children: ReactNode;
   userName: string;
   branchName: string | null;
   pendingCount?: number;
+  unreadCount?: number;
 }) {
   const pathname = usePathname();
 
@@ -39,6 +42,7 @@ export function EmployeeShell({
       userName={userName}
       tabs={TABS}
       pendingCount={pendingCount}
+      unreadCount={unreadCount}
     >
       {children}
     </AppChrome>

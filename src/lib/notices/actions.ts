@@ -98,6 +98,9 @@ export async function createNoticeAction(input: {
   });
   revalidatePath("/admin/notices");
   revalidatePath("/admin/settings/notices");
+  revalidatePath("/admin/notifications");
   revalidatePath("/app/settings/notices");
+  revalidatePath("/app/notifications");
+  revalidatePath("/app");
   return { ok: true, data: notice, pushFailed: push.failed };
 }
