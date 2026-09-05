@@ -13,7 +13,7 @@ import { todayISO } from "@/lib/datetime";
 import type { InventoryItem, InventoryMemo } from "@/lib/types";
 
 const fieldClass =
-  "h-12 w-full rounded-12 bg-surface-2 px-3 text-15 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60";
+  "block h-12 w-full min-w-0 max-w-full rounded-12 bg-surface-2 px-3 text-15 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60";
 
 export function InventoryMemoSheet({
   open,
@@ -109,29 +109,27 @@ export function InventoryMemoSheet({
       onClose={onClose}
     >
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor={dateId} className="mb-1 block text-13 text-muted">
-              날짜
-            </label>
-            <input
-              id={dateId}
-              type="date"
-              value={memoDate}
-              disabled={loading}
-              onChange={(event) => {
-                setMemoDate(event.target.value);
-                setError("");
-              }}
-              className={fieldClass}
-            />
-          </div>
-          <div>
-            <p className="mb-1 text-13 text-muted">지점</p>
-            <p className="flex h-12 items-center text-15 font-semibold text-ink">
-              {branchName || "소속 지점 없음"}
-            </p>
-          </div>
+        <div>
+          <label htmlFor={dateId} className="mb-1 block text-13 text-muted">
+            날짜
+          </label>
+          <input
+            id={dateId}
+            type="date"
+            value={memoDate}
+            disabled={loading}
+            onChange={(event) => {
+              setMemoDate(event.target.value);
+              setError("");
+            }}
+            className={`${fieldClass} min-w-0 max-w-full`}
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-13 text-muted">지점</p>
+          <p className="flex h-12 min-w-0 items-center truncate rounded-12 bg-surface-2 px-3 text-15 font-semibold text-ink">
+            {branchName || "소속 지점 없음"}
+          </p>
         </div>
 
         <div className="rounded-16 bg-surface-2 p-3">
