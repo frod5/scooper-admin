@@ -20,6 +20,7 @@ export function CalendarCell({
   selected,
   names,
   pending,
+  hasMemo,
   assignmentsById,
   draggableIds,
   onSelect,
@@ -31,6 +32,7 @@ export function CalendarCell({
   selected?: boolean;
   names: CalendarCellPerson[];
   pending?: boolean;
+  hasMemo?: boolean;
   assignmentsById?: Map<string, WorkAssignment>;
   draggableIds?: Set<string>;
   onSelect: () => void;
@@ -95,6 +97,9 @@ export function CalendarCell({
         })}
         {extra > 0 ? (
           <span className="text-11 text-muted">+{extra}</span>
+        ) : null}
+        {hasMemo ? (
+          <span className="text-11 font-semibold text-accent">재고</span>
         ) : null}
       </div>
     </div>

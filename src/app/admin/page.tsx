@@ -5,6 +5,7 @@ import { yearMonthNow } from "@/lib/datetime";
 import { listDirectoryAction } from "@/lib/employees/actions";
 import { roleLabel } from "@/lib/roles";
 import { listAdminMonthAction } from "@/lib/schedules/actions";
+import { emptyMonthData } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function Page() {
       initialYear={year}
       initialMonth={month}
       initialData={
-        monthData.ok ? monthData.data : { assignments: [], requests: [] }
+        monthData.ok ? monthData.data : emptyMonthData()
       }
       loadError={loadError}
     />

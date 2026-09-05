@@ -2,20 +2,28 @@ import { EmployeeRequestsPage } from "@/components/requests/EmployeeRequestsPage
 import { requireEmployee } from "@/lib/auth/session";
 import { shiftMonth, yearMonthNow } from "@/lib/datetime";
 import { listEmployeeMonthAction } from "@/lib/schedules/actions";
-import type { ChangeRequest, MonthScheduleData, WorkAssignment } from "@/lib/types";
+import type {
+  ChangeRequest,
+  InventoryMemo,
+  MonthScheduleData,
+  WorkAssignment,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 function mergeMonths(parts: MonthScheduleData[]): MonthScheduleData {
   const assignments = new Map<string, WorkAssignment>();
   const requests = new Map<string, ChangeRequest>();
+  const memos = new Map<string, InventoryMemo>();
   for (const part of parts) {
     for (const item of part.assignments) assignments.set(item.id, item);
     for (const item of part.requests) requests.set(item.id, item);
+    for (const item of part.inventoryMemos ?? []) memos.set(item.id, item);
   }
   return {
     assignments: [...assignments.values()],
     requests: [...requests.values()],
+    inventoryMemos: [...memos.values()],
   };
 }
 

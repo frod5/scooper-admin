@@ -30,6 +30,7 @@ import type {
   ActionResult,
   AssignableEmployee,
   ChangeRequest,
+  InventoryMemo,
   MonthScheduleData,
   RequestStatus,
   UserStatus,
@@ -61,6 +62,20 @@ type RequestRow = {
   reason: string | null;
   status: RequestStatus;
   reviewed_by: string | null;
+};
+
+type InventoryMemoRow = {
+  id: string;
+  user_id: string;
+  branch_id: string;
+  memo_date: string;
+  body: string;
+  created_at: string;
+};
+
+type BranchRow = {
+  id: string;
+  name: string;
 };
 
 function branchNameOf(value: ProfileRow["branches"]) {
@@ -108,6 +123,41 @@ function toAssignment(
   };
 }
 
+async function branchesByIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: string[],
+) {
+  const unique = [...new Set(ids.filter(Boolean))];
+  const map = new Map<string, string>();
+  if (unique.length === 0) return map;
+  const { data, error } = await supabase
+    .from("branches")
+    .select("id, name")
+    .in("id", unique);
+  if (error) throw error;
+  for (const row of (data ?? []) as BranchRow[]) {
+    map.set(row.id, row.name);
+  }
+  return map;
+}
+
+function toInventoryMemo(
+  row: InventoryMemoRow,
+  profile: ProfileRow | undefined,
+  branchName: string | null,
+): InventoryMemo {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    author_name: profile?.name ?? "",
+    branch_id: row.branch_id,
+    branch_name: branchName,
+    memo_date: asDate(row.memo_date),
+    body: row.body,
+    created_at: row.created_at,
+  };
+}
+
 function toRequest(
   row: RequestRow,
   profile: ProfileRow | undefined,
@@ -141,7 +191,7 @@ async function loadMonth(
   month: number,
 ): Promise<MonthScheduleData> {
   const { start, end } = monthBounds(year, month);
-  const [scheduleRes, requestRes] = await Promise.all([
+  const [scheduleRes, requestRes, memoRes] = await Promise.all([
     supabase
       .from("work_schedules")
       .select("id, user_id, work_date, start_time, end_time")
@@ -156,11 +206,19 @@ async function loadMonth(
       .gte("work_date", start)
       .lte("work_date", end)
       .order("work_date"),
+    supabase
+      .from("inventory_memos")
+      .select("id, user_id, branch_id, memo_date, body, created_at")
+      .gte("memo_date", start)
+      .lte("memo_date", end)
+      .order("created_at"),
   ]);
   if (scheduleRes.error) throw scheduleRes.error;
   if (requestRes.error) throw requestRes.error;
+  if (memoRes.error) throw memoRes.error;
   const scheduleRows = scheduleRes.data;
   const requestRows = requestRes.data;
+  const memoRows = (memoRes.data ?? []) as InventoryMemoRow[];
 
   const schedules = (scheduleRows ?? []) as ScheduleRow[];
   const requests = (requestRows ?? []) as RequestRow[];
@@ -168,8 +226,15 @@ async function loadMonth(
     ...schedules.map((row) => row.user_id),
     ...requests.map((row) => row.user_id),
     ...requests.map((row) => row.reviewed_by ?? ""),
+    ...memoRows.map((row) => row.user_id),
   ];
-  const profiles = await profilesByIds(supabase, profileIds);
+  const [profiles, branchNames] = await Promise.all([
+    profilesByIds(supabase, profileIds),
+    branchesByIds(
+      supabase,
+      memoRows.map((row) => row.branch_id),
+    ),
+  ]);
   const assignments = schedules.map((row) =>
     toAssignment(row, profiles.get(row.user_id)),
   );
@@ -187,6 +252,13 @@ async function loadMonth(
         assignmentKey.get(`${row.user_id}:${asDate(row.work_date)}`),
       ),
     ),
+    inventoryMemos: memoRows.map((row) =>
+      toInventoryMemo(
+        row,
+        profiles.get(row.user_id),
+        branchNames.get(row.branch_id) ?? null,
+      ),
+    ),
   };
 }
 
@@ -195,6 +267,9 @@ function filterByBranch(data: MonthScheduleData, branchId: string | "all") {
   return {
     assignments: data.assignments.filter((item) => item.branch_id === branchId),
     requests: data.requests.filter((item) => item.branch_id === branchId),
+    inventoryMemos: data.inventoryMemos.filter(
+      (item) => item.branch_id === branchId,
+    ),
   };
 }
 

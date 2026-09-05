@@ -2,6 +2,7 @@ import { CalendarPage } from "@/components/calendar/CalendarPage";
 import { requireEmployee } from "@/lib/auth/session";
 import { yearMonthNow } from "@/lib/datetime";
 import { listEmployeeMonthAction } from "@/lib/schedules/actions";
+import { emptyMonthData } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function Page() {
       initialYear={year}
       initialMonth={month}
       initialData={
-        result.ok ? result.data : { assignments: [], requests: [] }
+        result.ok ? result.data : emptyMonthData()
       }
       loadError={result.ok ? undefined : result.error}
     />

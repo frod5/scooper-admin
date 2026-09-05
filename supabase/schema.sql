@@ -101,6 +101,15 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.inventory_memos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  branch_id uuid not null references public.branches (id),
+  memo_date date not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists profiles_branch_id_idx on public.profiles (branch_id);
 create index if not exists profiles_role_idx on public.profiles (role);
 create index if not exists work_schedules_work_date_idx on public.work_schedules (work_date);
@@ -118,6 +127,10 @@ create index notifications_user_id_created_at_idx
 create index notifications_user_id_unread_idx
   on public.notifications (user_id, created_at desc)
   where read_at is null;
+create index if not exists inventory_memos_memo_date_idx
+  on public.inventory_memos (memo_date);
+create index if not exists inventory_memos_branch_date_idx
+  on public.inventory_memos (branch_id, memo_date desc);
 
 create or replace function public.current_role()
 returns public.user_role
@@ -216,6 +229,7 @@ alter table public.notices enable row level security;
 alter table public.support_tickets enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.notifications enable row level security;
+alter table public.inventory_memos enable row level security;
 
 drop policy if exists branches_select on public.branches;
 create policy branches_select on public.branches
@@ -372,6 +386,27 @@ create policy notifications_update on public.notifications
   using (user_id = auth.uid() and public.is_active_self())
   with check (user_id = auth.uid() and public.is_active_self());
 
+drop policy if exists inventory_memos_select on public.inventory_memos;
+create policy inventory_memos_select on public.inventory_memos
+  for select to authenticated
+  using (
+    public.is_active_self()
+    and (
+      public.is_staff()
+      or branch_id = public.current_branch_id()
+    )
+  );
+
+drop policy if exists inventory_memos_insert on public.inventory_memos;
+create policy inventory_memos_insert on public.inventory_memos
+  for insert to authenticated
+  with check (
+    user_id = auth.uid()
+    and public.current_role() = 'employee'
+    and public.current_status() = 'active'
+    and branch_id = public.current_branch_id()
+  );
+
 revoke all on public.branches from anon, public;
 revoke all on public.profiles from anon, public;
 revoke all on public.work_schedules from anon, public;
@@ -380,6 +415,7 @@ revoke all on public.notices from anon, public;
 revoke all on public.support_tickets from anon, public;
 revoke all on public.push_subscriptions from anon, public;
 revoke all on public.notifications from anon, public;
+revoke all on public.inventory_memos from anon, public;
 
 grant select, insert, update, delete on public.branches to authenticated;
 grant select, insert, update, delete on public.profiles to authenticated;
@@ -389,6 +425,7 @@ grant select, insert, update, delete on public.notices to authenticated;
 grant select, insert, update, delete on public.support_tickets to authenticated;
 grant select, insert, update, delete on public.push_subscriptions to authenticated;
 grant select, insert, update, delete on public.notifications to authenticated;
+grant select, insert, update, delete on public.inventory_memos to authenticated;
 
 revoke all on function public.current_role() from public, anon;
 revoke all on function public.current_status() from public, anon;

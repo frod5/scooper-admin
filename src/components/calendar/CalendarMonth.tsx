@@ -19,6 +19,7 @@ export function CalendarMonth({
   month,
   selectedDate,
   days,
+  memoDates,
   assignmentsById,
   draggableIds,
   onSelect,
@@ -27,6 +28,7 @@ export function CalendarMonth({
   month: number;
   selectedDate?: string | null;
   days: Record<string, CalendarDayContent>;
+  memoDates?: Set<string>;
   assignmentsById?: Map<string, WorkAssignment>;
   draggableIds?: Set<string>;
   onSelect: (date: string) => void;
@@ -77,6 +79,7 @@ export function CalendarMonth({
                 pending={
                   Boolean(content.minePending) || content.pendingCount > 0
                 }
+                hasMemo={Boolean(memoDates?.has(cell.date))}
                 assignmentsById={assignmentsById}
                 draggableIds={draggableIds}
                 onSelect={() => onSelect(cell.date!)}

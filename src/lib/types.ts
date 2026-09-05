@@ -62,10 +62,26 @@ export type ChangeRequest = {
   current_end: string | null;
 };
 
+export type InventoryMemo = {
+  id: string;
+  user_id: string;
+  author_name: string;
+  branch_id: string;
+  branch_name: string | null;
+  memo_date: string;
+  body: string;
+  created_at: string;
+};
+
 export type MonthScheduleData = {
   assignments: WorkAssignment[];
   requests: ChangeRequest[];
+  inventoryMemos: InventoryMemo[];
 };
+
+export function emptyMonthData(): MonthScheduleData {
+  return { assignments: [], requests: [], inventoryMemos: [] };
+}
 
 export type AssignableEmployee = {
   id: string;

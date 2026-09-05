@@ -69,6 +69,8 @@ import type {
   WorkAssignment,
 } from "@/lib/types";
 import { ChangeRequestForm } from "@/components/schedule/ChangeRequestForm";
+import { InventoryMemoList } from "@/components/inventory/InventoryMemoList";
+import { InventoryMemoSheet } from "@/components/inventory/InventoryMemoSheet";
 
 function workDayRows(
   people: DirectoryPerson[],
@@ -163,6 +165,7 @@ export function CalendarPage({
   } | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
   const [mineOnly, setMineOnly] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
 
   const myUserId = profile?.id;
   const isStaff = mode === "admin";
@@ -176,6 +179,18 @@ export function CalendarPage({
   }, [data.requests, isStaff, mineOnly, myUserId]);
   const days = buildCalendarDays(visibleAssignments, visibleRequests, myUserId);
   const dayAssignments = assignmentsOnDate(visibleAssignments, selectedDate);
+  const dayMemos = useMemo(
+    () =>
+      (data.inventoryMemos ?? []).filter(
+        (item) => item.memo_date === selectedDate,
+      ),
+    [data.inventoryMemos, selectedDate],
+  );
+  const memoDates = useMemo(() => {
+    const dates = new Set<string>();
+    for (const item of data.inventoryMemos ?? []) dates.add(item.memo_date);
+    return dates;
+  }, [data.inventoryMemos]);
   const dayPending = pendingOnDate(data.requests, selectedDate);
   const myPending =
     myUserId ? myPendingOnDate(data.requests, selectedDate, myUserId) : undefined;
@@ -480,6 +495,7 @@ export function CalendarPage({
               month={month}
               selectedDate={selectedDate}
               days={days}
+              memoDates={isStaff ? memoDates : undefined}
               assignmentsById={assignmentsById}
               draggableIds={draggableIds}
               onSelect={selectDate}
@@ -534,14 +550,16 @@ export function CalendarPage({
               </div>
             ) : null}
           </div>
+          {isStaff ? (
+            <InventoryMemoList
+              memos={dayMemos}
+              showBranch={branchId === "all"}
+            />
+          ) : null}
 
           {!loading ? (
             <section
-              className={
-                isStaff
-                  ? "mt-8 pb-[calc(var(--fab-size)+24px)]"
-                  : "mt-8"
-              }
+              className="mt-8 pb-[calc(var(--fab-size)+24px)]"
             >
               <div className="mb-3 flex items-center">
                 <h2 className="text-17 text-ink">근무일수</h2>
@@ -581,17 +599,37 @@ export function CalendarPage({
           ) : null}
         </div>
 
-        {isStaff ? (
-          <div
-            className="pointer-events-none fixed left-1/2 z-30 flex w-full max-w-[520px] -translate-x-1/2 justify-end px-4"
-            style={{
-              bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)",
-            }}
-          >
-            <div className="pointer-events-auto">
+        <div
+          className="pointer-events-none fixed left-1/2 z-30 flex w-full max-w-[520px] -translate-x-1/2 justify-end px-4"
+          style={{
+            bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)",
+          }}
+        >
+          <div className="pointer-events-auto">
+            {isStaff ? (
               <FAB onClick={() => void openAdd()} />
-            </div>
+            ) : (
+              <FAB
+                label="재고 메모 추가"
+                onClick={() => setInventoryOpen(true)}
+              />
+            )}
           </div>
+        </div>
+
+        {inventoryOpen ? (
+          <InventoryMemoSheet
+            open
+            branchName={profile?.branch_name ?? null}
+            onClose={() => setInventoryOpen(false)}
+            onCreated={(memo) => {
+              setData((current) => ({
+                ...current,
+                inventoryMemos: [...(current.inventoryMemos ?? []), memo],
+              }));
+              setToast("재고 메모를 등록했습니다.");
+            }}
+          />
         ) : null}
 
         {shiftOpen ? (
@@ -753,6 +791,7 @@ export function CalendarPage({
       return;
     }
     setData((current) => ({
+      ...current,
       requests: current.requests.map((item) =>
         item.id === id ? result.data : item,
       ),
