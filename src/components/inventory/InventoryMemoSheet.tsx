@@ -9,11 +9,8 @@ import {
   createInventoryMemoAction,
   updateInventoryMemoAction,
 } from "@/lib/inventory/actions";
-import { todayISO } from "@/lib/datetime";
+import { shortDayLabel, todayISO } from "@/lib/datetime";
 import type { InventoryItem, InventoryMemo } from "@/lib/types";
-
-const fieldClass =
-  "block h-12 w-full min-w-0 max-w-full rounded-12 bg-surface-2 px-3 text-15 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60";
 
 export function InventoryMemoSheet({
   open,
@@ -107,29 +104,36 @@ export function InventoryMemoSheet({
       open={open}
       title={editing ? "재고 메모 수정" : "재고 메모"}
       onClose={onClose}
+      className="overflow-x-hidden"
     >
       <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor={dateId} className="mb-1 block text-13 text-muted">
-            날짜
+        <div className="overflow-hidden rounded-16 bg-surface-2">
+          <label
+            htmlFor={dateId}
+            className="relative flex min-h-14 cursor-pointer items-center justify-between gap-3 px-4"
+          >
+            <span className="shrink-0 text-13 text-muted">날짜</span>
+            <span className="min-w-0 truncate text-15 font-semibold text-ink">
+              {shortDayLabel(memoDate)}
+            </span>
+            <input
+              id={dateId}
+              type="date"
+              value={memoDate}
+              disabled={loading}
+              onChange={(event) => {
+                setMemoDate(event.target.value);
+                setError("");
+              }}
+              className="absolute inset-0 z-10 cursor-pointer opacity-0 disabled:cursor-default"
+            />
           </label>
-          <input
-            id={dateId}
-            type="date"
-            value={memoDate}
-            disabled={loading}
-            onChange={(event) => {
-              setMemoDate(event.target.value);
-              setError("");
-            }}
-            className={`${fieldClass} min-w-0 max-w-full`}
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-13 text-muted">지점</p>
-          <p className="flex h-12 min-w-0 items-center truncate rounded-12 bg-surface-2 px-3 text-15 font-semibold text-ink">
-            {branchName || "소속 지점 없음"}
-          </p>
+          <div className="flex min-h-14 items-center justify-between gap-3 px-4">
+            <span className="shrink-0 text-13 text-muted">지점</span>
+            <span className="min-w-0 truncate text-15 font-semibold text-ink">
+              {branchName || "소속 지점 없음"}
+            </span>
+          </div>
         </div>
 
         <div className="rounded-16 bg-surface-2 p-3">
