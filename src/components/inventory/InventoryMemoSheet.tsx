@@ -31,34 +31,32 @@ export function InventoryMemoSheet({
   const labelId = useId();
   const dateId = useId();
   const editing = Boolean(memo);
+  const qtyId = useId();
   const [memoDate, setMemoDate] = useState(memo?.memo_date ?? todayISO());
   const [labelInput, setLabelInput] = useState("");
+  const [qtyInput, setQtyInput] = useState("");
   const [items, setItems] = useState<InventoryItem[]>(memo?.items ?? []);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function addLabel() {
+  function addItem() {
     const label = labelInput.trim();
+    const qty = Number(qtyInput);
     if (!label) {
       setError("항목 이름을 입력하세요.");
+      return;
+    }
+    if (qtyInput === "" || !Number.isFinite(qty) || qty < 0) {
+      setError("수량을 입력하세요.");
       return;
     }
     if (items.some((item) => item.label === label)) {
       setError("이미 추가한 항목입니다.");
       return;
     }
-    setItems((current) => [...current, { label, qty: Number.NaN }]);
+    setItems((current) => [...current, { label, qty }]);
     setLabelInput("");
-    setError("");
-  }
-
-  function setQty(index: number, value: string) {
-    const qty = value === "" ? Number.NaN : Number(value);
-    setItems((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, qty } : item,
-      ),
-    );
+    setQtyInput("");
     setError("");
   }
 
@@ -132,33 +130,60 @@ export function InventoryMemoSheet({
           </div>
         </div>
 
-        <div>
-          <label htmlFor={labelId} className="mb-1 block text-13 text-muted">
-            항목
-          </label>
-          <div className="flex gap-2">
-            <input
-              id={labelId}
-              value={labelInput}
-              disabled={loading}
-              placeholder="레몬"
-              onChange={(event) => {
-                setLabelInput(event.target.value);
-                setError("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addLabel();
-                }
-              }}
-              className={fieldClass}
-            />
+        <div className="rounded-16 bg-surface-2 p-3">
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <label htmlFor={labelId} className="mb-1 block text-13 text-muted">
+                항목
+              </label>
+              <input
+                id={labelId}
+                value={labelInput}
+                disabled={loading}
+                placeholder="레몬"
+                onChange={(event) => {
+                  setLabelInput(event.target.value);
+                  setError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addItem();
+                  }
+                }}
+                className="h-12 w-full rounded-12 bg-surface px-3 text-15 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60"
+              />
+            </div>
+            <div className="w-20 shrink-0">
+              <label htmlFor={qtyId} className="mb-1 block text-13 text-muted">
+                수량
+              </label>
+              <input
+                id={qtyId}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={qtyInput}
+                disabled={loading}
+                placeholder="3"
+                onChange={(event) => {
+                  setQtyInput(event.target.value);
+                  setError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addItem();
+                  }
+                }}
+                className="h-12 w-full rounded-12 bg-surface px-2 text-center text-15 tabular-nums text-ink outline-none placeholder:text-muted [appearance:textfield] focus:ring-2 focus:ring-accent disabled:opacity-60 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+            </div>
             <button
               type="button"
               disabled={loading}
-              onClick={addLabel}
-              className="h-12 shrink-0 rounded-12 px-4 text-15 font-semibold text-accent disabled:opacity-60"
+              onClick={addItem}
+              className="h-12 shrink-0 rounded-12 px-3 text-15 font-semibold text-accent disabled:opacity-60"
             >
               추가
             </button>
@@ -170,22 +195,14 @@ export function InventoryMemoSheet({
             {items.map((item, index) => (
               <div
                 key={`${item.label}-${index}`}
-                className="flex items-center gap-2 px-3 py-2"
+                className="flex items-center gap-2 px-4 py-3"
               >
                 <p className="min-w-0 flex-1 truncate text-15 font-semibold text-ink">
                   {item.label}
                 </p>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={Number.isFinite(item.qty) ? item.qty : ""}
-                  disabled={loading}
-                  aria-label={`${item.label} 수량`}
-                  onChange={(event) => setQty(index, event.target.value)}
-                  className="h-10 w-16 rounded-12 bg-surface px-2 text-center text-15 tabular-nums text-ink outline-none [appearance:textfield] focus:ring-2 focus:ring-accent disabled:opacity-60 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="w-4 text-13 text-muted">개</span>
+                <p className="shrink-0 text-15 tabular-nums text-muted">
+                  {item.qty}개
+                </p>
                 <button
                   type="button"
                   aria-label={`${item.label} 삭제`}
@@ -198,11 +215,7 @@ export function InventoryMemoSheet({
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-13 text-muted">
-            항목을 추가한 뒤 수량만 입력하세요.
-          </p>
-        )}
+        ) : null}
 
         {error ? <p className="text-13 text-danger">{error}</p> : null}
 
