@@ -1,7 +1,10 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
-import { tintDotClass } from "@/components/calendar/EventChip";
+import {
+  tintDotClass,
+  useChipTintIndex,
+} from "@/components/calendar/EventChip";
 import { useShiftDnd } from "@/components/calendar/ShiftDnd";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { cn } from "@/lib/cn";
@@ -27,6 +30,7 @@ export function AgendaRow({
   onRequest?: () => void;
 }) {
   const mine = Boolean(myUserId && assignment.user_id === myUserId);
+  const tint = useChipTintIndex(assignment.user_id);
   const resigned = assignment.status === "resigned";
   const { bindDrag, draggingId } = useShiftDnd();
   const dragging = draggingId === assignment.id;
@@ -43,7 +47,7 @@ export function AgendaRow({
       <span
         className={cn(
           "h-10 w-1 shrink-0 rounded-pill",
-          tintDotClass(assignment.user_id, mine),
+          tintDotClass(assignment.user_id, mine, tint),
         )}
       />
       <div className="min-w-0 flex-1">

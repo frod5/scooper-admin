@@ -23,12 +23,29 @@ export function sortMineFirst(assignments: WorkAssignment[], myUserId?: string) 
   });
 }
 
+export const CHIP_TINT_COUNT = 12;
+
 export function chipTint(userId: string) {
   let hash = 0;
   for (let i = 0; i < userId.length; i += 1) {
     hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
   }
-  return hash % 6;
+  return hash % CHIP_TINT_COUNT;
+}
+
+export function buildChipTintMap(
+  userIds: Iterable<string>,
+  myUserId?: string,
+) {
+  const unique = [...new Set(userIds)].filter(
+    (id) => Boolean(id) && id !== myUserId,
+  );
+  unique.sort();
+  const map = new Map<string, number>();
+  unique.forEach((id, index) => {
+    map.set(id, index % CHIP_TINT_COUNT);
+  });
+  return map;
 }
 
 export function displayName(assignment: WorkAssignment, myUserId?: string) {

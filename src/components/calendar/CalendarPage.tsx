@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { AgendaList } from "@/components/calendar/AgendaList";
+import { ChipTintProvider } from "@/components/calendar/EventChip";
 import {
   CalendarMonth,
   CalendarSkeleton,
@@ -193,6 +194,11 @@ export function CalendarPage({
     for (const item of data.assignments) map.set(item.id, item);
     return map;
   }, [data.assignments]);
+
+  const chipUserIds = useMemo(
+    () => data.assignments.map((item) => item.user_id),
+    [data.assignments],
+  );
 
   const monthWorkDays = useMemo(() => {
     if (!isStaff && profile) {
@@ -391,7 +397,8 @@ export function CalendarPage({
         : null;
 
   return (
-    <ShiftDndProvider myUserId={myUserId} onDrop={onDropShift}>
+    <ChipTintProvider userIds={chipUserIds} myUserId={myUserId}>
+      <ShiftDndProvider myUserId={myUserId} onDrop={onDropShift}>
       <div className="-mx-4 flex flex-col">
         <div className="px-4 pb-3">
           <MonthSwitcher
@@ -716,7 +723,8 @@ export function CalendarPage({
           <NoticeToast message={toast} variant="ok" onDone={() => setToast("")} />
         ) : null}
       </div>
-    </ShiftDndProvider>
+      </ShiftDndProvider>
+    </ChipTintProvider>
   );
 
   async function handleApprove(id: string) {

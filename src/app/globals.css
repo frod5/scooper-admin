@@ -54,6 +54,18 @@
   --color-chip-4-fg: #e37400;
   --color-chip-5-bg: #cbf0f8;
   --color-chip-5-fg: #007b83;
+  --color-chip-6-bg: #fdcfe8;
+  --color-chip-6-fg: #c2185b;
+  --color-chip-7-bg: #ffccbc;
+  --color-chip-7-fg: #d84315;
+  --color-chip-8-bg: #e6ee9c;
+  --color-chip-8-fg: #827717;
+  --color-chip-9-bg: #d7ccc8;
+  --color-chip-9-fg: #5d4037;
+  --color-chip-10-bg: #cfd8dc;
+  --color-chip-10-fg: #37474f;
+  --color-chip-11-bg: #b2dfdb;
+  --color-chip-11-fg: #00695c;
 
   --font-sans: "Pretendard", "Pretendard Variable", "Apple SD Gothic Neo",
     "Noto Sans KR", system-ui, sans-serif;
