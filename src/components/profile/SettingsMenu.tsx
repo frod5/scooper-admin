@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PushSettingsRow } from "@/components/pwa/PushSettingsRow";
 import { ListRow } from "@/components/ui/ListRow";
 
 export function SettingsMenu({
@@ -41,7 +40,6 @@ export function SettingsMenu({
       {supportLabel && onSupport ? (
         <ListRow title={supportLabel} onClick={onSupport} />
       ) : null}
-      <PushSettingsRow />
     </div>
   );
 }
