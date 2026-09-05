@@ -162,11 +162,20 @@ export function CalendarPage({
     toDate: string;
   } | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
 
   const myUserId = profile?.id;
   const isStaff = mode === "admin";
-  const days = buildCalendarDays(data.assignments, data.requests, myUserId);
-  const dayAssignments = assignmentsOnDate(data.assignments, selectedDate);
+  const visibleAssignments = useMemo(() => {
+    if (isStaff || !mineOnly || !myUserId) return data.assignments;
+    return data.assignments.filter((item) => item.user_id === myUserId);
+  }, [data.assignments, isStaff, mineOnly, myUserId]);
+  const visibleRequests = useMemo(() => {
+    if (isStaff || !mineOnly || !myUserId) return data.requests;
+    return data.requests.filter((item) => item.user_id === myUserId);
+  }, [data.requests, isStaff, mineOnly, myUserId]);
+  const days = buildCalendarDays(visibleAssignments, visibleRequests, myUserId);
+  const dayAssignments = assignmentsOnDate(visibleAssignments, selectedDate);
   const dayPending = pendingOnDate(data.requests, selectedDate);
   const myPending =
     myUserId ? myPendingOnDate(data.requests, selectedDate, myUserId) : undefined;
@@ -440,7 +449,17 @@ export function CalendarPage({
                 void load(year, month, value);
               }}
             />
-          ) : null}
+          ) : (
+            <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={mineOnly}
+                onChange={(event) => setMineOnly(event.target.checked)}
+                className="size-5 accent-accent"
+              />
+              <span className="text-15 text-ink">내 근무만 보기</span>
+            </label>
+          )}
           {isStaff ? (
             <PendingBar
               count={allPending.length}
