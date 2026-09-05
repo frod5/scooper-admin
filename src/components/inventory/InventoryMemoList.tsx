@@ -1,6 +1,5 @@
 "use client";
 
-import { inventoryItemLine } from "@/lib/inventory/items";
 import type { InventoryMemo } from "@/lib/types";
 
 function groupByBranch(memos: InventoryMemo[]) {
@@ -48,24 +47,32 @@ export function InventoryMemoList({
                 key={memo.id}
                 className="rounded-16 bg-surface p-4 shadow-card"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-15 font-semibold text-ink">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-13 text-muted">
                     {memo.author_name}
                   </p>
                   {onEdit ? (
                     <button
                       type="button"
-                      className="h-9 shrink-0 text-13 font-semibold text-accent"
+                      className="h-8 shrink-0 text-13 font-semibold text-accent"
                       onClick={() => onEdit(memo)}
                     >
                       수정
                     </button>
                   ) : null}
                 </div>
-                <ul className="mt-2 flex flex-col gap-1">
+                <ul className="mt-2 flex flex-col">
                   {(memo.items ?? []).map((item) => (
-                    <li key={item.label} className="text-15 text-ink">
-                      {inventoryItemLine(item)}
+                    <li
+                      key={item.label}
+                      className="flex items-baseline justify-between gap-3 py-1 text-15 text-ink"
+                    >
+                      <span className="min-w-0 truncate font-semibold">
+                        {item.label}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted">
+                        {item.qty}개
+                      </span>
                     </li>
                   ))}
                 </ul>

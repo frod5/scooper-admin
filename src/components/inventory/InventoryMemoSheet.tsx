@@ -1,17 +1,19 @@
 "use client";
 
 import { useId, useState } from "react";
+import { X } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GhostButton } from "@/components/ui/GhostButton";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
-import { TextField } from "@/components/ui/TextField";
 import {
   createInventoryMemoAction,
   updateInventoryMemoAction,
 } from "@/lib/inventory/actions";
 import { todayISO } from "@/lib/datetime";
 import type { InventoryItem, InventoryMemo } from "@/lib/types";
+
+const fieldClass =
+  "h-12 w-full rounded-12 bg-surface-2 px-3 text-15 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60";
 
 export function InventoryMemoSheet({
   open,
@@ -27,6 +29,7 @@ export function InventoryMemoSheet({
   onSaved: (memo: InventoryMemo) => void;
 }) {
   const labelId = useId();
+  const dateId = useId();
   const editing = Boolean(memo);
   const [memoDate, setMemoDate] = useState(memo?.memo_date ?? todayISO());
   const [labelInput, setLabelInput] = useState("");
@@ -73,16 +76,17 @@ export function InventoryMemoSheet({
       return;
     }
     setLoading(true);
-    const result = editing && memo
-      ? await updateInventoryMemoAction({
-          id: memo.id,
-          memoDate,
-          items,
-        })
-      : await createInventoryMemoAction({
-          memoDate,
-          items,
-        });
+    const result =
+      editing && memo
+        ? await updateInventoryMemoAction({
+            id: memo.id,
+            memoDate,
+            items,
+          })
+        : await createInventoryMemoAction({
+            memoDate,
+            items,
+          });
     setLoading(false);
     if (!result.ok) {
       setError(result.error);
@@ -102,31 +106,35 @@ export function InventoryMemoSheet({
       title={editing ? "재고 메모 수정" : "재고 메모"}
       onClose={onClose}
     >
-      {error ? (
-        <div className="mb-3">
-          <ErrorBanner message={error} />
-        </div>
-      ) : null}
       <div className="flex flex-col gap-4">
-        <TextField
-          label="재고 입력 날짜"
-          type="date"
-          value={memoDate}
-          onChange={(value) => {
-            setMemoDate(value);
-            setError("");
-          }}
-          disabled={loading}
-        />
-        <div>
-          <p className="mb-1 text-13 text-muted">지점</p>
-          <p className="flex h-14 items-center rounded-16 bg-surface-2 px-4 text-17 text-ink">
-            {branchName || "소속 지점 없음"}
-          </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor={dateId} className="mb-1 block text-13 text-muted">
+              날짜
+            </label>
+            <input
+              id={dateId}
+              type="date"
+              value={memoDate}
+              disabled={loading}
+              onChange={(event) => {
+                setMemoDate(event.target.value);
+                setError("");
+              }}
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <p className="mb-1 text-13 text-muted">지점</p>
+            <p className="flex h-12 items-center text-15 font-semibold text-ink">
+              {branchName || "소속 지점 없음"}
+            </p>
+          </div>
         </div>
+
         <div>
           <label htmlFor={labelId} className="mb-1 block text-13 text-muted">
-            항목 추가
+            항목
           </label>
           <div className="flex gap-2">
             <input
@@ -144,23 +152,25 @@ export function InventoryMemoSheet({
                   addLabel();
                 }
               }}
-              className="h-14 min-w-0 flex-1 rounded-16 bg-surface-2 px-4 text-17 text-ink outline-none placeholder:text-muted focus:ring-2 focus:ring-accent disabled:opacity-60"
+              className={fieldClass}
             />
-            <GhostButton
-              className="h-14 w-auto shrink-0 px-4"
+            <button
+              type="button"
               disabled={loading}
               onClick={addLabel}
+              className="h-12 shrink-0 rounded-12 px-4 text-15 font-semibold text-accent disabled:opacity-60"
             >
               추가
-            </GhostButton>
+            </button>
           </div>
         </div>
+
         {items.length > 0 ? (
-          <div className="flex flex-col gap-2">
+          <div className="overflow-hidden rounded-16 bg-surface-2">
             {items.map((item, index) => (
               <div
                 key={`${item.label}-${index}`}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 px-3 py-2"
               >
                 <p className="min-w-0 flex-1 truncate text-15 font-semibold text-ink">
                   {item.label}
@@ -173,20 +183,29 @@ export function InventoryMemoSheet({
                   disabled={loading}
                   aria-label={`${item.label} 수량`}
                   onChange={(event) => setQty(index, event.target.value)}
-                  className="h-11 w-20 rounded-12 bg-surface-2 px-3 text-right text-15 text-ink outline-none focus:ring-2 focus:ring-accent disabled:opacity-60"
+                  className="h-10 w-16 rounded-12 bg-surface px-2 text-center text-15 tabular-nums text-ink outline-none [appearance:textfield] focus:ring-2 focus:ring-accent disabled:opacity-60 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
-                <span className="text-15 text-muted">개</span>
-                <GhostButton
-                  className="h-11 w-auto px-3 text-15 text-danger"
+                <span className="w-4 text-13 text-muted">개</span>
+                <button
+                  type="button"
+                  aria-label={`${item.label} 삭제`}
                   disabled={loading}
                   onClick={() => removeItem(index)}
+                  className="flex size-10 shrink-0 items-center justify-center text-muted disabled:opacity-60"
                 >
-                  삭제
-                </GhostButton>
+                  <X size={18} strokeWidth={2} />
+                </button>
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <p className="text-13 text-muted">
+            항목을 추가한 뒤 수량만 입력하세요.
+          </p>
+        )}
+
+        {error ? <p className="text-13 text-danger">{error}</p> : null}
+
         <div className="flex gap-3">
           <GhostButton onClick={onClose} disabled={loading}>
             취소

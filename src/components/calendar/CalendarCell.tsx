@@ -54,6 +54,9 @@ export function CalendarCell({
       {pending ? (
         <span className="absolute right-1 top-1 size-1.5 rounded-full bg-warn" />
       ) : null}
+      {hasMemo ? (
+        <span className="absolute left-1 top-1 size-1.5 rounded-full bg-accent" />
+      ) : null}
       <button
         type="button"
         onClick={onSelect}
@@ -97,9 +100,6 @@ export function CalendarCell({
         })}
         {extra > 0 ? (
           <span className="text-11 text-muted">+{extra}</span>
-        ) : null}
-        {hasMemo ? (
-          <span className="text-11 font-semibold text-accent">재고</span>
         ) : null}
       </div>
     </div>
