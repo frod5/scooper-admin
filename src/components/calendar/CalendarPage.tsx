@@ -71,6 +71,7 @@ import type {
 } from "@/lib/types";
 import { ChangeRequestForm } from "@/components/schedule/ChangeRequestForm";
 import { InventoryMemoList } from "@/components/inventory/InventoryMemoList";
+import { deleteInventoryMemoAction } from "@/lib/inventory/actions";
 import { InventoryMemoSheet } from "@/components/inventory/InventoryMemoSheet";
 import { OwnerRequestSheet } from "@/components/owner-requests/OwnerRequestSheet";
 
@@ -169,6 +170,7 @@ export function CalendarPage({
   const [mineOnly, setMineOnly] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [editingMemo, setEditingMemo] = useState<InventoryMemo | null>(null);
+  const [deletingMemo, setDeletingMemo] = useState<InventoryMemo | null>(null);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [ownerRequestOpen, setOwnerRequestOpen] = useState(false);
 
@@ -562,6 +564,7 @@ export function CalendarPage({
               setEditingMemo(memo);
               setInventoryOpen(true);
             }}
+            onDelete={(memo) => setDeletingMemo(memo)}
           />
 
           {!loading ? (
@@ -821,6 +824,33 @@ export function CalendarPage({
           onConfirm={() => {
             if (moveBusy) return;
             void confirmMove();
+          }}
+        />
+        <ConfirmSheet
+          open={Boolean(deletingMemo)}
+          title="재고 메모 삭제"
+          confirmLabel="삭제"
+          danger
+          body="이 재고 메모를 삭제할까요?"
+          onClose={() => setDeletingMemo(null)}
+          onConfirm={() => {
+            if (!deletingMemo) return;
+            const id = deletingMemo.id;
+            setDeletingMemo(null);
+            void (async () => {
+              const result = await deleteInventoryMemoAction(id);
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
+              setData((current) => ({
+                ...current,
+                inventoryMemos: (current.inventoryMemos ?? []).filter(
+                  (item) => item.id !== id,
+                ),
+              }));
+              setToast("재고 메모를 삭제했습니다.");
+            })();
           }}
         />
         <ConfirmSheet

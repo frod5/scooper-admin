@@ -156,3 +156,15 @@ export async function updateInventoryMemoAction(input: {
     ),
   };
 }
+
+export async function deleteInventoryMemoAction(
+  id: string,
+): Promise<ActionResult<null>> {
+  if (!getSupabasePublicEnv()) return { ok: false, error: NETWORK_ERROR };
+  await requireProfile();
+  const supabase = await createClient();
+  const { error } = await supabase.from("inventory_memos").delete().eq("id", id);
+  if (error) return { ok: false, error: NETWORK_ERROR };
+  revalidateMemos();
+  return { ok: true, data: null };
+}

@@ -25,10 +25,12 @@ export function InventoryMemoList({
   memos,
   showBranch,
   onEdit,
+  onDelete,
 }: {
   memos: InventoryMemo[];
   showBranch?: boolean;
   onEdit?: (memo: InventoryMemo) => void;
+  onDelete?: (memo: InventoryMemo) => void;
 }) {
   if (memos.length === 0) return null;
   const groups = groupByBranch(memos);
@@ -48,17 +50,30 @@ export function InventoryMemoList({
                 className="rounded-16 bg-surface p-4 shadow-card"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-13 text-muted">
+                  <p className="min-w-0 truncate text-13 text-muted">
                     {memo.author_name}
                   </p>
-                  {onEdit ? (
-                    <button
-                      type="button"
-                      className="h-8 shrink-0 text-13 font-semibold text-accent"
-                      onClick={() => onEdit(memo)}
-                    >
-                      수정
-                    </button>
+                  {onEdit || onDelete ? (
+                    <div className="flex shrink-0 items-center gap-3">
+                      {onEdit ? (
+                        <button
+                          type="button"
+                          className="h-8 text-13 font-semibold text-accent"
+                          onClick={() => onEdit(memo)}
+                        >
+                          수정
+                        </button>
+                      ) : null}
+                      {onDelete ? (
+                        <button
+                          type="button"
+                          className="h-8 text-13 font-semibold text-danger"
+                          onClick={() => onDelete(memo)}
+                        >
+                          삭제
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
                 <ul className="mt-2 flex flex-col">

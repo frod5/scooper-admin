@@ -457,6 +457,20 @@ create policy inventory_memos_update on public.inventory_memos
     )
   );
 
+drop policy if exists inventory_memos_delete on public.inventory_memos;
+create policy inventory_memos_delete on public.inventory_memos
+  for delete to authenticated
+  using (
+    public.is_active_self()
+    and (
+      public.is_staff()
+      or (
+        public.current_role() = 'employee'
+        and branch_id = public.current_branch_id()
+      )
+    )
+  );
+
 drop policy if exists owner_requests_select on public.owner_requests;
 create policy owner_requests_select on public.owner_requests
   for select to authenticated
