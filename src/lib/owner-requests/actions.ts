@@ -23,7 +23,6 @@ export async function createOwnerRequestAction(input: {
   });
   if (error) return { ok: false, error: NETWORK_ERROR };
 
-  revalidatePath("/app");
   revalidatePath("/admin");
   revalidatePath("/admin/notifications");
 

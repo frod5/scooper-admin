@@ -72,11 +72,8 @@ type InventoryMemoRow = {
   memo_date: string;
   body: string;
   created_at: string;
-};
-
-type BranchRow = {
-  id: string;
-  name: string;
+  profiles: { name: string } | { name: string }[] | null;
+  branches: { name: string } | { name: string }[] | null;
 };
 
 function branchNameOf(value: ProfileRow["branches"]) {
@@ -124,35 +121,21 @@ function toAssignment(
   };
 }
 
-async function branchesByIds(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  ids: string[],
+function nestedName(
+  value: { name: string } | { name: string }[] | null | undefined,
 ) {
-  const unique = [...new Set(ids.filter(Boolean))];
-  const map = new Map<string, string>();
-  if (unique.length === 0) return map;
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, name")
-    .in("id", unique);
-  if (error) throw error;
-  for (const row of (data ?? []) as BranchRow[]) {
-    map.set(row.id, row.name);
-  }
-  return map;
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0]?.name ?? null;
+  return value.name ?? null;
 }
 
-function toInventoryMemo(
-  row: InventoryMemoRow,
-  profile: ProfileRow | undefined,
-  branchName: string | null,
-): InventoryMemo {
+function toInventoryMemo(row: InventoryMemoRow): InventoryMemo {
   return {
     id: row.id,
     user_id: row.user_id,
-    author_name: profile?.name ?? "",
+    author_name: nestedName(row.profiles) ?? "",
     branch_id: row.branch_id,
-    branch_name: branchName,
+    branch_name: nestedName(row.branches),
     memo_date: asDate(row.memo_date),
     body: row.body,
     items: parseInventoryItems(row.body),
@@ -210,7 +193,9 @@ async function loadMonth(
       .order("work_date"),
     supabase
       .from("inventory_memos")
-      .select("id, user_id, branch_id, memo_date, body, created_at")
+      .select(
+        "id, user_id, branch_id, memo_date, body, created_at, profiles!user_id ( name ), branches!branch_id ( name )",
+      )
       .gte("memo_date", start)
       .lte("memo_date", end)
       .order("created_at"),
@@ -228,15 +213,8 @@ async function loadMonth(
     ...schedules.map((row) => row.user_id),
     ...requests.map((row) => row.user_id),
     ...requests.map((row) => row.reviewed_by ?? ""),
-    ...memoRows.map((row) => row.user_id),
   ];
-  const [profiles, branchNames] = await Promise.all([
-    profilesByIds(supabase, profileIds),
-    branchesByIds(
-      supabase,
-      memoRows.map((row) => row.branch_id),
-    ),
-  ]);
+  const profiles = await profilesByIds(supabase, profileIds);
   const assignments = schedules.map((row) =>
     toAssignment(row, profiles.get(row.user_id)),
   );
@@ -254,13 +232,7 @@ async function loadMonth(
         assignmentKey.get(`${row.user_id}:${asDate(row.work_date)}`),
       ),
     ),
-    inventoryMemos: memoRows.map((row) =>
-      toInventoryMemo(
-        row,
-        profiles.get(row.user_id),
-        branchNames.get(row.branch_id) ?? null,
-      ),
-    ),
+    inventoryMemos: memoRows.map((row) => toInventoryMemo(row)),
   };
 }
 

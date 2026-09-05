@@ -36,31 +36,6 @@ function cleanItems(items: InventoryItem[]): InventoryItem[] | string {
   return cleaned;
 }
 
-function mapMemo(
-  row: {
-    id: string;
-    user_id: string;
-    branch_id: string;
-    memo_date: string;
-    body: string;
-    created_at: string;
-  },
-  authorName: string,
-  branchName: string | null,
-): InventoryMemo {
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    author_name: authorName,
-    branch_id: row.branch_id,
-    branch_name: branchName,
-    memo_date: asDate(row.memo_date),
-    body: row.body,
-    items: parseInventoryItems(row.body),
-    created_at: row.created_at,
-  };
-}
-
 function revalidateMemos() {
   revalidatePath("/app");
   revalidatePath("/admin");
@@ -117,6 +92,7 @@ export async function createInventoryMemoAction(input: {
   const items = cleanItems(input.items);
   if (typeof items === "string") return { ok: false, error: items };
 
+  const body = serializeInventoryItems(items);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("inventory_memos")
@@ -124,27 +100,26 @@ export async function createInventoryMemoAction(input: {
       user_id: profile.id,
       branch_id: profile.branch_id,
       memo_date: memoDate,
-      body: serializeInventoryItems(items),
+      body,
     })
-    .select("id, user_id, branch_id, memo_date, body, created_at")
+    .select("id, created_at")
     .single();
   if (error || !data) return { ok: false, error: NETWORK_ERROR };
 
   revalidateMemos();
   return {
     ok: true,
-    data: mapMemo(
-      {
-        id: data.id as string,
-        user_id: data.user_id as string,
-        branch_id: data.branch_id as string,
-        memo_date: data.memo_date as string,
-        body: data.body as string,
-        created_at: data.created_at as string,
-      },
-      profile.name,
-      profile.branch_name,
-    ),
+    data: {
+      id: data.id as string,
+      user_id: profile.id,
+      author_name: profile.name,
+      branch_id: profile.branch_id,
+      branch_name: profile.branch_name,
+      memo_date: memoDate,
+      body,
+      items,
+      created_at: data.created_at as string,
+    },
   };
 }
 
@@ -162,33 +137,33 @@ export async function updateInventoryMemoAction(input: {
   const items = cleanItems(input.items);
   if (typeof items === "string") return { ok: false, error: items };
 
+  const body = serializeInventoryItems(items);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("inventory_memos")
     .update({
       memo_date: memoDate,
-      body: serializeInventoryItems(items),
+      body,
     })
     .eq("id", input.id)
-    .select("id, user_id, branch_id, memo_date, body, created_at")
+    .select("id, user_id, branch_id, created_at")
     .single();
   if (error || !data) return { ok: false, error: NETWORK_ERROR };
 
   revalidateMemos();
   return {
     ok: true,
-    data: mapMemo(
-      {
-        id: data.id as string,
-        user_id: data.user_id as string,
-        branch_id: data.branch_id as string,
-        memo_date: data.memo_date as string,
-        body: data.body as string,
-        created_at: data.created_at as string,
-      },
-      profile.id === (data.user_id as string) ? profile.name : "",
-      profile.branch_name,
-    ),
+    data: {
+      id: data.id as string,
+      user_id: data.user_id as string,
+      author_name: profile.id === (data.user_id as string) ? profile.name : "",
+      branch_id: data.branch_id as string,
+      branch_name: profile.branch_name,
+      memo_date: memoDate,
+      body,
+      items,
+      created_at: data.created_at as string,
+    },
   };
 }
 
