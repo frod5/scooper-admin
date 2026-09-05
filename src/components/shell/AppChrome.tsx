@@ -3,10 +3,9 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronLeft, Headphones, Megaphone } from "lucide-react";
+import { Bell, ChevronLeft, Megaphone } from "lucide-react";
 import { NoticeComposeSheet } from "@/components/notices/NoticeComposeSheet";
 import { InstallHomeButton } from "@/components/pwa/InstallHomeButton";
-import { SupportRequestSheet } from "@/components/support/SupportRequestSheet";
 import { NoticeToast } from "@/components/ui/NoticeToast";
 import { PageShell } from "@/components/ui/PageShell";
 import type { TabItem } from "@/components/ui/TabBar";
@@ -35,7 +34,6 @@ export function AppChrome({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [supportOpen, setSupportOpen] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [toast, setToast] = useState("");
   const notificationsHref =
@@ -72,11 +70,6 @@ export function AppChrome({
               <Megaphone size={22} strokeWidth={2} />
             </HeaderIcon>
           ) : null}
-          {role === "employee" ? (
-            <HeaderIcon label="고객센터" onClick={() => setSupportOpen(true)}>
-              <Headphones size={22} strokeWidth={2} />
-            </HeaderIcon>
-          ) : null}
           <InstallHomeButton />
           {extraRight}
           <Link
@@ -104,13 +97,6 @@ export function AppChrome({
       pendingCount={pendingCount}
     >
       {children}
-      {supportOpen ? (
-        <SupportRequestSheet
-          open
-          onClose={() => setSupportOpen(false)}
-          onSent={(message) => setToast(message)}
-        />
-      ) : null}
       {noticeOpen ? (
         <NoticeComposeSheet
           open
