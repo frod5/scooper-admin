@@ -1,0 +1,118 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+
+@font-face {
+  font-family: "Pretendard";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2")
+    format("woff2-variations");
+}
+
+@theme {
+  /* Toss TDS-inspired greys + Google Calendar event colors. Not the TDS kit. */
+  /* Deputy-inspired: white surfaces, indigo-violet accent, spacious lists */
+  --color-bg: #f6f5fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #eeedf6;
+  --color-ink: #1c1b28;
+  --color-ink-2: #3d3b4d;
+  --color-muted: #8b8898;
+  --color-line: #e6e4ef;
+  --color-hairline: rgb(28 27 40 / 0.08);
+  --color-handle: #d0cde0;
+
+  --color-accent: #5b4dff;
+  --color-accent-press: #4739e6;
+  --color-accent-soft: #eeedfe;
+
+  --color-sunday: #e5484d;
+  --color-saturday: #5b4dff;
+
+  --color-ok: #00b05b;
+  --color-ok-soft: #e8f8ef;
+  --color-warn: #ff9200;
+  --color-warn-soft: #fff5e5;
+  --color-danger: #f04452;
+  --color-danger-soft: #ffecec;
+  --color-off: #8b95a1;
+  --color-off-soft: #f2f4f6;
+
+  --color-overlay: rgb(0 0 0 / 0.45);
+  --color-focus: #5b4dff;
+
+  --color-chip-0-bg: #d2e3fc;
+  --color-chip-0-fg: #1a73e8;
+  --color-chip-1-bg: #ceead6;
+  --color-chip-1-fg: #137333;
+  --color-chip-2-bg: #d7aefb;
+  --color-chip-2-fg: #8430ce;
+  --color-chip-3-bg: #fad2cf;
+  --color-chip-3-fg: #c5221f;
+  --color-chip-4-bg: #feefc3;
+  --color-chip-4-fg: #e37400;
+  --color-chip-5-bg: #cbf0f8;
+  --color-chip-5-fg: #007b83;
+
+  --font-sans: "Pretendard", "Pretendard Variable", "Apple SD Gothic Neo",
+    "Noto Sans KR", system-ui, sans-serif;
+
+  --text-11: 11px;
+  --text-11--line-height: 14px;
+  --text-11--font-weight: 500;
+
+  --text-13: 13px;
+  --text-13--line-height: 18px;
+  --text-13--font-weight: 500;
+
+  --text-15: 15px;
+  --text-15--line-height: 22px;
+  --text-15--font-weight: 500;
+
+  --text-17: 17px;
+  --text-17--line-height: 24px;
+  --text-17--font-weight: 600;
+
+  --text-22: 22px;
+  --text-22--line-height: 28px;
+  --text-22--font-weight: 700;
+
+  --text-28: 28px;
+  --text-28--line-height: 34px;
+  --text-28--font-weight: 700;
+
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-pill: 999px;
+
+  --shadow-card: none;
+  --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.12);
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  --tap: 44px;
+  --header-h: 56px;
+  --tabbar-h: 56px;
+  --fab-size: 52px;
+  --hairline: 1px;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
