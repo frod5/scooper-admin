@@ -1,8 +1,9 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
-export async function createClient() {
+export const createClient = cache(async () => {
   const env = getSupabasePublicEnv();
   if (!env) {
     throw new Error("Supabase 환경 변수가 없습니다. .env.local을 확인하세요.");
@@ -26,4 +27,4 @@ export async function createClient() {
       },
     },
   });
-}
+});

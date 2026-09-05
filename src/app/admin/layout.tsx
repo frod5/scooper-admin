@@ -12,8 +12,8 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await requireStaff();
-  const [pending, branches, unread] = await Promise.all([
+  const [profile, pending, branches, unread] = await Promise.all([
+    requireStaff(),
     countPendingChangeRequestsAction(),
     listBranchesAction(),
     countUnreadNotificationsAction(),

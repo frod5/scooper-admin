@@ -26,14 +26,6 @@ function isLoginPath(pathname: string) {
   return pathname === "/login";
 }
 
-function isAppPath(pathname: string) {
-  return pathname === "/app" || pathname.startsWith("/app/");
-}
-
-function isAdminPath(pathname: string) {
-  return pathname === "/admin" || pathname.startsWith("/admin/");
-}
-
 export async function updateSession(request: NextRequest) {
   const env = getSupabasePublicEnv();
   const pathname = request.nextUrl.pathname;
@@ -79,6 +71,10 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  if (!isLoginPath(pathname) && pathname !== "/") {
+    return supabaseResponse;
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("role, status")
@@ -95,21 +91,9 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  if (isLoginPath(pathname) || pathname === "/") {
-    return redirectWithSession(
-      request,
-      supabaseResponse,
-      isStaffRole(role) ? "/admin" : "/app",
-    );
-  }
-
-  if (isAppPath(pathname) && isStaffRole(role)) {
-    return redirectWithSession(request, supabaseResponse, "/admin");
-  }
-
-  if (isAdminPath(pathname) && !isStaffRole(role)) {
-    return redirectWithSession(request, supabaseResponse, "/forbidden");
-  }
-
-  return supabaseResponse;
+  return redirectWithSession(
+    request,
+    supabaseResponse,
+    isStaffRole(role) ? "/admin" : "/app",
+  );
 }

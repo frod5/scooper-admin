@@ -9,9 +9,9 @@ import { listAdminMonthAction } from "@/lib/schedules/actions";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const profile = await requireStaff();
   const { year, month } = yearMonthNow();
-  const [branches, monthData, people] = await Promise.all([
+  const [profile, branches, monthData, people] = await Promise.all([
+    requireStaff(),
     listBranchesAction(),
     listAdminMonthAction(year, month, "all"),
     listDirectoryAction(),

@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { requireEmployee, requireStaff } from "@/lib/auth/session";
 import {
@@ -140,23 +141,26 @@ async function loadMonth(
   month: number,
 ): Promise<MonthScheduleData> {
   const { start, end } = monthBounds(year, month);
-  const { data: scheduleRows, error: scheduleError } = await supabase
-    .from("work_schedules")
-    .select("id, user_id, work_date, start_time, end_time")
-    .gte("work_date", start)
-    .lte("work_date", end)
-    .order("start_time");
-  if (scheduleError) throw scheduleError;
-
-  const { data: requestRows, error: requestError } = await supabase
-    .from("schedule_change_requests")
-    .select(
-      "id, user_id, work_date, requested_start, requested_end, reason, status, reviewed_by",
-    )
-    .gte("work_date", start)
-    .lte("work_date", end)
-    .order("work_date");
-  if (requestError) throw requestError;
+  const [scheduleRes, requestRes] = await Promise.all([
+    supabase
+      .from("work_schedules")
+      .select("id, user_id, work_date, start_time, end_time")
+      .gte("work_date", start)
+      .lte("work_date", end)
+      .order("start_time"),
+    supabase
+      .from("schedule_change_requests")
+      .select(
+        "id, user_id, work_date, requested_start, requested_end, reason, status, reviewed_by",
+      )
+      .gte("work_date", start)
+      .lte("work_date", end)
+      .order("work_date"),
+  ]);
+  if (scheduleRes.error) throw scheduleRes.error;
+  if (requestRes.error) throw requestRes.error;
+  const scheduleRows = scheduleRes.data;
+  const requestRows = requestRes.data;
 
   const schedules = (scheduleRows ?? []) as ScheduleRow[];
   const requests = (requestRows ?? []) as RequestRow[];
@@ -225,11 +229,7 @@ export async function listAdminMonthAction(
   }
 }
 
-export async function countPendingChangeRequestsAction(): Promise<
-  ActionResult<number>
-> {
-  if (!getSupabasePublicEnv()) return { ok: true, data: 0 };
-  await requireStaff();
+const loadPendingCount = cache(async (): Promise<ActionResult<number>> => {
   const supabase = await createClient();
   const { count, error } = await supabase
     .from("schedule_change_requests")
@@ -237,6 +237,14 @@ export async function countPendingChangeRequestsAction(): Promise<
     .eq("status", "pending");
   if (error) return { ok: false, error: NETWORK_ERROR };
   return { ok: true, data: count ?? 0 };
+});
+
+export async function countPendingChangeRequestsAction(): Promise<
+  ActionResult<number>
+> {
+  if (!getSupabasePublicEnv()) return { ok: true, data: 0 };
+  await requireStaff();
+  return loadPendingCount();
 }
 
 export async function listPendingChangeRequestsAction(): Promise<

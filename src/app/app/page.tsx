@@ -6,9 +6,11 @@ import { listEmployeeMonthAction } from "@/lib/schedules/actions";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const profile = await requireEmployee();
   const { year, month } = yearMonthNow();
-  const result = await listEmployeeMonthAction(year, month);
+  const [profile, result] = await Promise.all([
+    requireEmployee(),
+    listEmployeeMonthAction(year, month),
+  ]);
   return (
     <CalendarPage
       mode="employee"

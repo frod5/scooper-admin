@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth/session";
 import {
@@ -11,40 +12,41 @@ import { createClient } from "@/lib/supabase/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import type { ActionResult, Branch } from "@/lib/types";
 
-export async function listBranchesAction(): Promise<ActionResult<Branch[]>> {
-  if (!getSupabasePublicEnv()) return { ok: false, error: NETWORK_ERROR };
-  await requireStaff();
-
+const loadBranches = cache(async (): Promise<ActionResult<Branch[]>> => {
   const supabase = await createClient();
-  const { data: branches, error } = await supabase
-    .from("branches")
-    .select("id, name")
-    .order("name");
+  const [branchRes, employeeRes] = await Promise.all([
+    supabase.from("branches").select("id, name").order("name"),
+    supabase
+      .from("profiles")
+      .select("branch_id")
+      .eq("role", "employee")
+      .eq("status", "active"),
+  ]);
 
-  if (error) return { ok: false, error: NETWORK_ERROR };
-
-  const { data: employees, error: employeeError } = await supabase
-    .from("profiles")
-    .select("branch_id")
-    .eq("role", "employee")
-    .eq("status", "active");
-
-  if (employeeError) return { ok: false, error: NETWORK_ERROR };
+  if (branchRes.error || employeeRes.error) {
+    return { ok: false, error: NETWORK_ERROR };
+  }
 
   const counts = new Map<string, number>();
-  for (const row of employees ?? []) {
+  for (const row of employeeRes.data ?? []) {
     if (!row.branch_id) continue;
     counts.set(row.branch_id, (counts.get(row.branch_id) ?? 0) + 1);
   }
 
   return {
     ok: true,
-    data: (branches ?? []).map((branch) => ({
+    data: (branchRes.data ?? []).map((branch) => ({
       id: branch.id as string,
       name: branch.name as string,
       activeEmployeeCount: counts.get(branch.id as string) ?? 0,
     })),
   };
+});
+
+export async function listBranchesAction(): Promise<ActionResult<Branch[]>> {
+  if (!getSupabasePublicEnv()) return { ok: false, error: NETWORK_ERROR };
+  await requireStaff();
+  return loadBranches();
 }
 
 export async function createBranchAction(

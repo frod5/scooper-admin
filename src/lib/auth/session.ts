@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
@@ -21,7 +22,7 @@ function branchNameOf(row: ProfileRow): string | null {
   return branch.name ?? null;
 }
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   if (!getSupabasePublicEnv()) return null;
 
   const supabase = await createClient();
@@ -52,7 +53,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     branch_id: row.branch_id,
     branch_name: branchNameOf(row),
   };
-}
+});
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getCurrentProfile();

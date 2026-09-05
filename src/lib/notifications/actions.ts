@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth/session";
 import { NETWORK_ERROR } from "@/lib/errors";
@@ -91,19 +92,23 @@ export async function listMyNotificationsAction(): Promise<
   };
 }
 
+const loadUnreadCount = cache(async (userId: string): Promise<number> => {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("read_at", null);
+  if (error) return 0;
+  return count ?? 0;
+});
+
 export async function countUnreadNotificationsAction(): Promise<
   ActionResult<number>
 > {
   if (!getSupabasePublicEnv()) return { ok: true, data: 0 };
   const profile = await requireProfile();
-  const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", profile.id)
-    .is("read_at", null);
-  if (error) return { ok: true, data: 0 };
-  return { ok: true, data: count ?? 0 };
+  return { ok: true, data: await loadUnreadCount(profile.id) };
 }
 
 export async function markNotificationReadAction(
