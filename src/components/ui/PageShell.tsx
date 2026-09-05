@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/ui/AppHeader";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
 import { TabBar, type TabItem } from "@/components/ui/TabBar";
 
 export function PageShell({
@@ -40,7 +41,7 @@ export function PageShell({
               "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px)",
           }}
         >
-          {children}
+          <PullToRefresh>{children}</PullToRefresh>
         </main>
         {fab ? (
           <div

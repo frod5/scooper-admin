@@ -120,6 +120,7 @@
 html,
 body {
   min-height: 100%;
+  overscroll-behavior-y: contain;
 }
 
 body {
