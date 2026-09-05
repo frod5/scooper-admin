@@ -19,10 +19,16 @@ type InAppPayload = {
 };
 
 function vapid() {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
   if (!publicKey || !privateKey) return null;
   return { publicKey, privateKey };
+}
+
+function vapidSubject() {
+  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (site?.startsWith("https://")) return site;
+  return "https://scooper-admin.vercel.app";
 }
 
 export async function sendPushToUserIds(
@@ -35,7 +41,7 @@ export async function sendPushToUserIds(
   if (!keys || !getSupabaseSecretKey()) return { failed: true };
 
   webPush.setVapidDetails(
-    "mailto:scooper@internal.local",
+    vapidSubject(),
     keys.publicKey,
     keys.privateKey,
   );
@@ -67,6 +73,7 @@ export async function sendPushToUserIds(
             },
           },
           body,
+          { TTL: 86400 },
         );
       } catch (err) {
         const status = (err as { statusCode?: number }).statusCode;
