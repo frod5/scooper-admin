@@ -66,6 +66,48 @@ function revalidateMemos() {
   revalidatePath("/admin");
 }
 
+export async function listPreviousInventoryItemsAction(
+  memoDate: string,
+): Promise<ActionResult<InventoryItem[]>> {
+  if (!getSupabasePublicEnv()) return { ok: false, error: NETWORK_ERROR };
+  const profile = await requireEmployee();
+  if (!profile.branch_id) return { ok: true, data: [] };
+  const date = asDate(memoDate);
+  if (!isISODate(date)) return { ok: true, data: [] };
+
+  const supabase = await createClient();
+  const { data: latest, error: latestError } = await supabase
+    .from("inventory_memos")
+    .select("memo_date")
+    .eq("branch_id", profile.branch_id)
+    .lt("memo_date", date)
+    .order("memo_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestError) return { ok: false, error: NETWORK_ERROR };
+  if (!latest) return { ok: true, data: [] };
+
+  const prevDate = asDate(latest.memo_date as string);
+  const { data: rows, error } = await supabase
+    .from("inventory_memos")
+    .select("body, created_at")
+    .eq("branch_id", profile.branch_id)
+    .eq("memo_date", prevDate)
+    .order("created_at", { ascending: true });
+  if (error) return { ok: false, error: NETWORK_ERROR };
+
+  const items: InventoryItem[] = [];
+  const seen = new Set<string>();
+  for (const row of rows ?? []) {
+    for (const item of parseInventoryItems(row.body as string)) {
+      if (seen.has(item.label)) continue;
+      seen.add(item.label);
+      items.push(item);
+    }
+  }
+  return { ok: true, data: items };
+}
+
 export async function createInventoryMemoAction(input: {
   memoDate: string;
   items: InventoryItem[];

@@ -19,12 +19,14 @@ export function InventoryMemoSheet({
   open,
   branchName,
   memo,
+  templateItems,
   onClose,
   onSaved,
 }: {
   open: boolean;
   branchName: string | null;
   memo?: InventoryMemo | null;
+  templateItems?: InventoryItem[];
   onClose: () => void;
   onSaved: (memo: InventoryMemo) => void;
 }) {
@@ -35,7 +37,9 @@ export function InventoryMemoSheet({
   const [memoDate, setMemoDate] = useState(memo?.memo_date ?? todayISO());
   const [labelInput, setLabelInput] = useState("");
   const [qtyInput, setQtyInput] = useState("");
-  const [items, setItems] = useState<InventoryItem[]>(memo?.items ?? []);
+  const [items, setItems] = useState<InventoryItem[]>(
+    memo?.items ?? templateItems ?? [],
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 

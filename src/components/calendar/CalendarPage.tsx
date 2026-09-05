@@ -64,6 +64,7 @@ import type {
   Branch,
   ChangeRequest,
   DirectoryPerson,
+  InventoryItem,
   InventoryMemo,
   MonthScheduleData,
   Profile,
@@ -71,7 +72,10 @@ import type {
 } from "@/lib/types";
 import { ChangeRequestForm } from "@/components/schedule/ChangeRequestForm";
 import { InventoryMemoList } from "@/components/inventory/InventoryMemoList";
-import { deleteInventoryMemoAction } from "@/lib/inventory/actions";
+import {
+  deleteInventoryMemoAction,
+  listPreviousInventoryItemsAction,
+} from "@/lib/inventory/actions";
 import { InventoryMemoSheet } from "@/components/inventory/InventoryMemoSheet";
 import { OwnerRequestSheet } from "@/components/owner-requests/OwnerRequestSheet";
 
@@ -170,6 +174,9 @@ export function CalendarPage({
   const [mineOnly, setMineOnly] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [editingMemo, setEditingMemo] = useState<InventoryMemo | null>(null);
+  const [inventoryTemplate, setInventoryTemplate] = useState<InventoryItem[]>(
+    [],
+  );
   const [deletingMemo, setDeletingMemo] = useState<InventoryMemo | null>(null);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [ownerRequestOpen, setOwnerRequestOpen] = useState(false);
@@ -638,7 +645,13 @@ export function CalendarPage({
                 onClick={() => {
                   setFabMenuOpen(false);
                   setEditingMemo(null);
-                  setInventoryOpen(true);
+                  void (async () => {
+                    const result = await listPreviousInventoryItemsAction(
+                      todayISO(),
+                    );
+                    setInventoryTemplate(result.ok ? result.data : []);
+                    setInventoryOpen(true);
+                  })();
                 }}
               >
                 재고메모 등록하기
@@ -663,6 +676,7 @@ export function CalendarPage({
               editingMemo?.branch_name ?? profile?.branch_name ?? null
             }
             memo={editingMemo}
+            templateItems={editingMemo ? undefined : inventoryTemplate}
             onClose={() => {
               setInventoryOpen(false);
               setEditingMemo(null);
