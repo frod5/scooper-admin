@@ -76,6 +76,7 @@ import {
   deleteInventoryMemoAction,
   listPreviousInventoryItemsAction,
 } from "@/lib/inventory/actions";
+import { previousInventoryItems } from "@/lib/inventory/items";
 import { InventoryMemoSheet } from "@/components/inventory/InventoryMemoSheet";
 import { OwnerRequestSheet } from "@/components/owner-requests/OwnerRequestSheet";
 
@@ -191,23 +192,35 @@ export function CalendarPage({
     if (isStaff || !mineOnly || !myUserId) return data.requests;
     return data.requests.filter((item) => item.user_id === myUserId);
   }, [data.requests, isStaff, mineOnly, myUserId]);
-  const days = buildCalendarDays(visibleAssignments, visibleRequests, myUserId);
-  const dayAssignments = assignmentsOnDate(visibleAssignments, selectedDate);
+  const days = useMemo(
+    () => buildCalendarDays(visibleAssignments, visibleRequests, myUserId),
+    [visibleAssignments, visibleRequests, myUserId],
+  );
+  const dayAssignments = useMemo(
+    () => assignmentsOnDate(visibleAssignments, selectedDate),
+    [visibleAssignments, selectedDate],
+  );
   const dayMemos = useMemo(
     () =>
-      (data.inventoryMemos ?? []).filter(
-        (item) => item.memo_date === selectedDate,
-      ),
+      data.inventoryMemos.filter((item) => item.memo_date === selectedDate),
     [data.inventoryMemos, selectedDate],
   );
   const memoDates = useMemo(() => {
     const dates = new Set<string>();
-    for (const item of data.inventoryMemos ?? []) dates.add(item.memo_date);
+    for (const item of data.inventoryMemos) dates.add(item.memo_date);
     return dates;
   }, [data.inventoryMemos]);
-  const dayPending = pendingOnDate(data.requests, selectedDate);
-  const myPending =
-    myUserId ? myPendingOnDate(data.requests, selectedDate, myUserId) : undefined;
+  const dayPending = useMemo(
+    () => pendingOnDate(data.requests, selectedDate),
+    [data.requests, selectedDate],
+  );
+  const myPending = useMemo(
+    () =>
+      myUserId
+        ? myPendingOnDate(data.requests, selectedDate, myUserId)
+        : undefined,
+    [data.requests, selectedDate, myUserId],
+  );
   const myShift = dayAssignments.find(
     (item) => item.user_id === myUserId && item.status === "active",
   );
@@ -220,7 +233,10 @@ export function CalendarPage({
       !myPending &&
       canRequestChange(myShift.work_date, myShift.start_time),
   );
-  const allPending = data.requests.filter((item) => item.status === "pending");
+  const allPending = useMemo(
+    () => data.requests.filter((item) => item.status === "pending"),
+    [data.requests],
+  );
   const selectedBranchName =
     branchId === "all"
       ? undefined
@@ -233,10 +249,16 @@ export function CalendarPage({
     return map;
   }, [data.assignments]);
 
-  const chipUserIds = useMemo(
-    () => data.assignments.map((item) => item.user_id),
-    [data.assignments],
-  );
+  const chipUserIds = useMemo(() => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const item of data.assignments) {
+      if (seen.has(item.user_id)) continue;
+      seen.add(item.user_id);
+      ids.push(item.user_id);
+    }
+    return ids;
+  }, [data.assignments]);
 
   const monthWorkDays = useMemo(() => {
     if (!isStaff && profile) {
@@ -646,9 +668,19 @@ export function CalendarPage({
                   setFabMenuOpen(false);
                   setEditingMemo(null);
                   void (async () => {
-                    const result = await listPreviousInventoryItemsAction(
-                      todayISO(),
+                    const before = todayISO();
+                    const local = previousInventoryItems(
+                      data.inventoryMemos,
+                      before,
+                      profile?.branch_id,
                     );
+                    if (local) {
+                      setInventoryTemplate(local);
+                      setInventoryOpen(true);
+                      return;
+                    }
+                    const result =
+                      await listPreviousInventoryItemsAction(before);
                     setInventoryTemplate(result.ok ? result.data : []);
                     setInventoryOpen(true);
                   })();

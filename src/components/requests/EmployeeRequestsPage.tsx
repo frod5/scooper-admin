@@ -25,28 +25,12 @@ import {
   listEmployeeMonthAction,
 } from "@/lib/schedules/actions";
 import { myPendingOnDate } from "@/lib/schedules/view";
-import type {
-  ChangeRequest,
-  InventoryMemo,
-  MonthScheduleData,
-  WorkAssignment,
+import {
+  mergeMonthData,
+  type ChangeRequest,
+  type MonthScheduleData,
+  type WorkAssignment,
 } from "@/lib/types";
-
-function mergeMonths(parts: MonthScheduleData[]): MonthScheduleData {
-  const assignments = new Map<string, WorkAssignment>();
-  const requests = new Map<string, ChangeRequest>();
-  const memos = new Map<string, InventoryMemo>();
-  for (const part of parts) {
-    for (const item of part.assignments) assignments.set(item.id, item);
-    for (const item of part.requests) requests.set(item.id, item);
-    for (const item of part.inventoryMemos ?? []) memos.set(item.id, item);
-  }
-  return {
-    assignments: [...assignments.values()],
-    requests: [...requests.values()],
-    inventoryMemos: [...memos.values()],
-  };
-}
 
 function requestDayLabel(iso: string) {
   const [, month, day] = iso.split("-").map(Number);
@@ -86,7 +70,7 @@ async function loadNearbyMonths() {
   ]);
   const failed = results.find((result) => !result.ok);
   return {
-    data: mergeMonths(
+    data: mergeMonthData(
       results
         .filter(
           (result): result is { ok: true; data: MonthScheduleData } =>

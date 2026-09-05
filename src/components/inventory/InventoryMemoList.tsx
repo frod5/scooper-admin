@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import type { InventoryMemo } from "@/lib/types";
 
 function groupByBranch(memos: InventoryMemo[]) {
@@ -32,8 +33,8 @@ export function InventoryMemoList({
   onEdit?: (memo: InventoryMemo) => void;
   onDelete?: (memo: InventoryMemo) => void;
 }) {
+  const groups = useMemo(() => groupByBranch(memos), [memos]);
   if (memos.length === 0) return null;
-  const groups = groupByBranch(memos);
 
   return (
     <section className="mt-6">

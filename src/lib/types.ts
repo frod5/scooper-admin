@@ -89,6 +89,22 @@ export function emptyMonthData(): MonthScheduleData {
   return { assignments: [], requests: [], inventoryMemos: [] };
 }
 
+export function mergeMonthData(parts: MonthScheduleData[]): MonthScheduleData {
+  const assignments = new Map<string, WorkAssignment>();
+  const requests = new Map<string, ChangeRequest>();
+  const memos = new Map<string, InventoryMemo>();
+  for (const part of parts) {
+    for (const item of part.assignments) assignments.set(item.id, item);
+    for (const item of part.requests) requests.set(item.id, item);
+    for (const item of part.inventoryMemos) memos.set(item.id, item);
+  }
+  return {
+    assignments: [...assignments.values()],
+    requests: [...requests.values()],
+    inventoryMemos: [...memos.values()],
+  };
+}
+
 export type AssignableEmployee = {
   id: string;
   name: string;

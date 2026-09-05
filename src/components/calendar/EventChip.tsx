@@ -48,9 +48,11 @@ export function ChipTintProvider({
   myUserId?: string;
   children: ReactNode;
 }) {
+  const userKey = [...new Set(userIds)].filter(Boolean).sort().join("\0");
   const map = useMemo(
     () => buildChipTintMap(userIds, myUserId),
-    [userIds, myUserId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- userKey fingerprints userIds
+    [userKey, myUserId],
   );
   return (
     <ChipTintContext.Provider value={map}>{children}</ChipTintContext.Provider>

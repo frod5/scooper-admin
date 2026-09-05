@@ -1,4 +1,4 @@
-import type { InventoryItem } from "@/lib/types";
+import type { InventoryItem, InventoryMemo } from "@/lib/types";
 
 export function parseInventoryItems(body: string): InventoryItem[] {
   try {
@@ -29,6 +29,28 @@ export function serializeInventoryItems(items: InventoryItem[]): string {
   );
 }
 
-export function inventoryItemLine(item: InventoryItem): string {
-  return `${item.label} ${item.qty}개`;
+export function previousInventoryItems(
+  memos: InventoryMemo[],
+  beforeDate: string,
+  branchId?: string | null,
+): InventoryItem[] | null {
+  let prevDate = "";
+  for (const memo of memos) {
+    if (branchId && memo.branch_id !== branchId) continue;
+    if (memo.memo_date >= beforeDate) continue;
+    if (memo.memo_date > prevDate) prevDate = memo.memo_date;
+  }
+  if (!prevDate) return null;
+  const items: InventoryItem[] = [];
+  const seen = new Set<string>();
+  for (const memo of memos) {
+    if (memo.memo_date !== prevDate) continue;
+    if (branchId && memo.branch_id !== branchId) continue;
+    for (const item of memo.items) {
+      if (seen.has(item.label)) continue;
+      seen.add(item.label);
+      items.push(item);
+    }
+  }
+  return items;
 }
