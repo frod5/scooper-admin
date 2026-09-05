@@ -64,6 +64,7 @@ import type {
   Branch,
   ChangeRequest,
   DirectoryPerson,
+  InventoryMemo,
   MonthScheduleData,
   Profile,
   WorkAssignment,
@@ -71,6 +72,7 @@ import type {
 import { ChangeRequestForm } from "@/components/schedule/ChangeRequestForm";
 import { InventoryMemoList } from "@/components/inventory/InventoryMemoList";
 import { InventoryMemoSheet } from "@/components/inventory/InventoryMemoSheet";
+import { OwnerRequestSheet } from "@/components/owner-requests/OwnerRequestSheet";
 
 function workDayRows(
   people: DirectoryPerson[],
@@ -166,6 +168,9 @@ export function CalendarPage({
   const [moveBusy, setMoveBusy] = useState(false);
   const [mineOnly, setMineOnly] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [editingMemo, setEditingMemo] = useState<InventoryMemo | null>(null);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [ownerRequestOpen, setOwnerRequestOpen] = useState(false);
 
   const myUserId = profile?.id;
   const isStaff = mode === "admin";
@@ -495,7 +500,7 @@ export function CalendarPage({
               month={month}
               selectedDate={selectedDate}
               days={days}
-              memoDates={isStaff ? memoDates : undefined}
+              memoDates={memoDates}
               assignmentsById={assignmentsById}
               draggableIds={draggableIds}
               onSelect={selectDate}
@@ -550,12 +555,14 @@ export function CalendarPage({
               </div>
             ) : null}
           </div>
-          {isStaff ? (
-            <InventoryMemoList
-              memos={dayMemos}
-              showBranch={branchId === "all"}
-            />
-          ) : null}
+          <InventoryMemoList
+            memos={dayMemos}
+            showBranch={isStaff && branchId === "all"}
+            onEdit={(memo) => {
+              setEditingMemo(memo);
+              setInventoryOpen(true);
+            }}
+          />
 
           {!loading ? (
             <section
@@ -610,25 +617,79 @@ export function CalendarPage({
               <FAB onClick={() => void openAdd()} />
             ) : (
               <FAB
-                label="재고 메모 추가"
-                onClick={() => setInventoryOpen(true)}
+                label="추가"
+                onClick={() => setFabMenuOpen(true)}
               />
             )}
           </div>
         </div>
 
+        {!isStaff ? (
+          <BottomSheet
+            open={fabMenuOpen}
+            title="추가"
+            onClose={() => setFabMenuOpen(false)}
+          >
+            <div className="flex flex-col gap-3 pb-2">
+              <SecondaryButton
+                onClick={() => {
+                  setFabMenuOpen(false);
+                  setEditingMemo(null);
+                  setInventoryOpen(true);
+                }}
+              >
+                재고메모 등록하기
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => {
+                  setFabMenuOpen(false);
+                  setOwnerRequestOpen(true);
+                }}
+              >
+                사장님에게 요청하기
+              </SecondaryButton>
+            </div>
+          </BottomSheet>
+        ) : null}
+
         {inventoryOpen ? (
           <InventoryMemoSheet
+            key={editingMemo?.id ?? "create"}
             open
-            branchName={profile?.branch_name ?? null}
-            onClose={() => setInventoryOpen(false)}
-            onCreated={(memo) => {
-              setData((current) => ({
-                ...current,
-                inventoryMemos: [...(current.inventoryMemos ?? []), memo],
-              }));
-              setToast("재고 메모를 등록했습니다.");
+            branchName={
+              editingMemo?.branch_name ?? profile?.branch_name ?? null
+            }
+            memo={editingMemo}
+            onClose={() => {
+              setInventoryOpen(false);
+              setEditingMemo(null);
             }}
+            onSaved={(memo) => {
+              setData((current) => {
+                const list = current.inventoryMemos ?? [];
+                const exists = list.some((item) => item.id === memo.id);
+                return {
+                  ...current,
+                  inventoryMemos: exists
+                    ? list.map((item) => (item.id === memo.id ? memo : item))
+                    : [...list, memo],
+                };
+              });
+              setSelectedDate(memo.memo_date);
+              setToast(
+                editingMemo
+                  ? "재고 메모를 수정했습니다."
+                  : "재고 메모를 등록했습니다.",
+              );
+            }}
+          />
+        ) : null}
+
+        {ownerRequestOpen ? (
+          <OwnerRequestSheet
+            open
+            onClose={() => setOwnerRequestOpen(false)}
+            onSent={(message) => setToast(message)}
           />
         ) : null}
 

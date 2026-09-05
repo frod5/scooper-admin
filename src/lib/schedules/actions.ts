@@ -15,6 +15,7 @@ import {
 } from "@/lib/datetime";
 import { NETWORK_ERROR, isDuplicateError } from "@/lib/errors";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseInventoryItems } from "@/lib/inventory/items";
 import {
   encodeDateMoveReason,
   parseRequestedDate,
@@ -154,6 +155,7 @@ function toInventoryMemo(
     branch_name: branchName,
     memo_date: asDate(row.memo_date),
     body: row.body,
+    items: parseInventoryItems(row.body),
     created_at: row.created_at,
   };
 }

@@ -23,9 +23,22 @@ do $$ begin
     'change_request',
     'change_approved',
     'change_rejected',
-    'notice'
+    'notice',
+    'owner_request'
   );
 exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1
+    from pg_enum e
+    join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'notification_type'
+      and e.enumlabel = 'owner_request'
+  ) then
+    alter type public.notification_type add value 'owner_request';
+  end if;
 end $$;
 
 create table if not exists public.branches (
@@ -110,6 +123,16 @@ create table if not exists public.inventory_memos (
   created_at timestamptz not null default now()
 );
 
+comment on column public.inventory_memos.body is
+  'JSON array of { "label": "레몬", "qty": 3 }';
+
+create table if not exists public.owner_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists profiles_branch_id_idx on public.profiles (branch_id);
 create index if not exists profiles_role_idx on public.profiles (role);
 create index if not exists work_schedules_work_date_idx on public.work_schedules (work_date);
@@ -131,6 +154,8 @@ create index if not exists inventory_memos_memo_date_idx
   on public.inventory_memos (memo_date);
 create index if not exists inventory_memos_branch_date_idx
   on public.inventory_memos (branch_id, memo_date desc);
+create index if not exists owner_requests_created_at_idx
+  on public.owner_requests (created_at desc);
 
 create or replace function public.current_role()
 returns public.user_role
@@ -230,6 +255,7 @@ alter table public.support_tickets enable row level security;
 alter table public.push_subscriptions enable row level security;
 alter table public.notifications enable row level security;
 alter table public.inventory_memos enable row level security;
+alter table public.owner_requests enable row level security;
 
 drop policy if exists branches_select on public.branches;
 create policy branches_select on public.branches
@@ -407,6 +433,44 @@ create policy inventory_memos_insert on public.inventory_memos
     and branch_id = public.current_branch_id()
   );
 
+drop policy if exists inventory_memos_update on public.inventory_memos;
+create policy inventory_memos_update on public.inventory_memos
+  for update to authenticated
+  using (
+    public.is_active_self()
+    and (
+      public.is_staff()
+      or (
+        public.current_role() = 'employee'
+        and branch_id = public.current_branch_id()
+      )
+    )
+  )
+  with check (
+    public.is_active_self()
+    and (
+      public.is_staff()
+      or (
+        public.current_role() = 'employee'
+        and branch_id = public.current_branch_id()
+      )
+    )
+  );
+
+drop policy if exists owner_requests_select on public.owner_requests;
+create policy owner_requests_select on public.owner_requests
+  for select to authenticated
+  using (public.is_staff() or user_id = auth.uid());
+
+drop policy if exists owner_requests_insert on public.owner_requests;
+create policy owner_requests_insert on public.owner_requests
+  for insert to authenticated
+  with check (
+    user_id = auth.uid()
+    and public.current_role() = 'employee'
+    and public.current_status() = 'active'
+  );
+
 revoke all on public.branches from anon, public;
 revoke all on public.profiles from anon, public;
 revoke all on public.work_schedules from anon, public;
@@ -416,6 +480,7 @@ revoke all on public.support_tickets from anon, public;
 revoke all on public.push_subscriptions from anon, public;
 revoke all on public.notifications from anon, public;
 revoke all on public.inventory_memos from anon, public;
+revoke all on public.owner_requests from anon, public;
 
 grant select, insert, update, delete on public.branches to authenticated;
 grant select, insert, update, delete on public.profiles to authenticated;
@@ -426,6 +491,7 @@ grant select, insert, update, delete on public.support_tickets to authenticated;
 grant select, insert, update, delete on public.push_subscriptions to authenticated;
 grant select, insert, update, delete on public.notifications to authenticated;
 grant select, insert, update, delete on public.inventory_memos to authenticated;
+grant select, insert, update, delete on public.owner_requests to authenticated;
 
 revoke all on function public.current_role() from public, anon;
 revoke all on function public.current_status() from public, anon;

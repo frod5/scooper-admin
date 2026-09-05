@@ -62,6 +62,11 @@ export type ChangeRequest = {
   current_end: string | null;
 };
 
+export type InventoryItem = {
+  label: string;
+  qty: number;
+};
+
 export type InventoryMemo = {
   id: string;
   user_id: string;
@@ -70,6 +75,7 @@ export type InventoryMemo = {
   branch_name: string | null;
   memo_date: string;
   body: string;
+  items: InventoryItem[];
   created_at: string;
 };
 
@@ -112,7 +118,8 @@ export type AppNotificationType =
   | "change_request"
   | "change_approved"
   | "change_rejected"
-  | "notice";
+  | "notice"
+  | "owner_request";
 
 export type AppNotification = {
   id: string;

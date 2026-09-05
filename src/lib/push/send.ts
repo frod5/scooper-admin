@@ -172,6 +172,29 @@ export async function notifySystemAdminsOfSupport(body: string): Promise<void> {
   );
 }
 
+export async function notifyStaffOfOwnerRequest(input: {
+  employeeName: string;
+  body: string;
+}): Promise<{ failed: boolean }> {
+  if (!getSupabaseSecretKey()) return { failed: true };
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id")
+    .in("role", ["owner", "system_admin"])
+    .eq("status", "active");
+  if (error || !data) return { failed: true };
+  return notifyUsers(
+    data.map((row) => row.id as string),
+    {
+      type: "owner_request",
+      title: "사장님에게 요청",
+      body: `${input.employeeName}: ${input.body}`.slice(0, 80),
+      url: "/admin/notifications",
+    },
+  );
+}
+
 export async function notifyStaffOfChangeRequest(input: {
   employeeName: string;
   excludeUserId?: string;

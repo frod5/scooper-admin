@@ -13,6 +13,7 @@ const NOTIFICATION_TYPES: AppNotificationType[] = [
   "change_approved",
   "change_rejected",
   "notice",
+  "owner_request",
 ];
 
 function isNotificationType(value: string): value is AppNotificationType {

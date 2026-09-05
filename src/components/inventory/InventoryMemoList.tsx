@@ -1,5 +1,6 @@
 "use client";
 
+import { inventoryItemLine } from "@/lib/inventory/items";
 import type { InventoryMemo } from "@/lib/types";
 
 function groupByBranch(memos: InventoryMemo[]) {
@@ -24,9 +25,11 @@ function groupByBranch(memos: InventoryMemo[]) {
 export function InventoryMemoList({
   memos,
   showBranch,
+  onEdit,
 }: {
   memos: InventoryMemo[];
   showBranch?: boolean;
+  onEdit?: (memo: InventoryMemo) => void;
 }) {
   if (memos.length === 0) return null;
   const groups = groupByBranch(memos);
@@ -45,12 +48,27 @@ export function InventoryMemoList({
                 key={memo.id}
                 className="rounded-16 bg-surface p-4 shadow-card"
               >
-                <p className="text-15 font-semibold text-ink">
-                  {memo.author_name}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-15 text-ink">
-                  {memo.body}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-15 font-semibold text-ink">
+                    {memo.author_name}
+                  </p>
+                  {onEdit ? (
+                    <button
+                      type="button"
+                      className="h-9 shrink-0 text-13 font-semibold text-accent"
+                      onClick={() => onEdit(memo)}
+                    >
+                      수정
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="mt-2 flex flex-col gap-1">
+                  {(memo.items ?? []).map((item) => (
+                    <li key={item.label} className="text-15 text-ink">
+                      {inventoryItemLine(item)}
+                    </li>
+                  ))}
+                </ul>
               </article>
             ))}
           </div>
