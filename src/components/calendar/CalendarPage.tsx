@@ -11,7 +11,6 @@ import { PendingBar } from "@/components/calendar/PendingBar";
 import { PendingListSheet } from "@/components/calendar/PendingListSheet";
 import { ShiftDndProvider } from "@/components/calendar/ShiftDnd";
 import { ShiftSheet } from "@/components/calendar/ShiftSheet";
-import { PushPrompt } from "@/components/pwa/PushPrompt";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import { DangerButton } from "@/components/ui/DangerButton";
@@ -419,7 +418,6 @@ export function CalendarPage({
               onRetry={() => void load(year, month, branchId)}
             />
           ) : null}
-          <PushPrompt />
           {isStaff ? (
             <FilterChips
               options={[

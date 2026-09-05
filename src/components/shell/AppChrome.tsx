@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Bell, ChevronLeft, Megaphone } from "lucide-react";
 import { NoticeComposeSheet } from "@/components/notices/NoticeComposeSheet";
 import { InstallHomeButton } from "@/components/pwa/InstallHomeButton";
+import { PushPrompt } from "@/components/pwa/PushPrompt";
 import { NoticeToast } from "@/components/ui/NoticeToast";
 import { PageShell } from "@/components/ui/PageShell";
 import type { TabItem } from "@/components/ui/TabBar";
@@ -96,6 +97,7 @@ export function AppChrome({
       tabs={tabs}
       pendingCount={pendingCount}
     >
+      <PushPrompt />
       {children}
       {noticeOpen ? (
         <NoticeComposeSheet
